@@ -216,16 +216,21 @@ README_FILE = os.path.join(repo_root, "README.md")
 with open(README_FILE, "r", encoding="utf8") as f:
     LONG_DESCRIPTION = f.read()
 
+
+def custom_version_scheme(version):
+    return str(version.tag)  # Return only the tag name without any additional information
+
+
 # Add Support for parsing tags that have a prefix containing '/' (ie 'sdk/go') to setuptools_scm.
 # Regex modified from default tag regex in:
 # https://github.com/pypa/setuptools_scm/blob/2a1b46d38fb2b8aeac09853e660bcd0d7c1bc7be/src/setuptools_scm/config.py#L9
-TAG_REGEX = re.compile(
-    r"^(?:[\/\w-]+)?(?P<version>[vV]?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$"
-)
+# TAG_REGEX = re.compile(
+#     r"^(?:[\/\w-]+)?(?P<version>[vV]?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$"
+# )
 
 # Only set use_scm_version if git executable exists (setting this variable causes pip to use git under the hood)
 if shutil.which("git"):
-    use_scm_version = {"root": ".", "relative_to": __file__, "tag_regex": TAG_REGEX}
+    use_scm_version = {"version_scheme": custom_version_scheme, "local_scheme": "no-local-version"}
 else:
     use_scm_version = None
 
@@ -332,8 +337,8 @@ class DevelopCommand(develop):
 
 setup(
     name=NAME,
-    author=AUTHOR,
     version="0.1.0",
+    author=AUTHOR,
     description=DESCRIPTION,
     long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",
