@@ -337,7 +337,6 @@ class DevelopCommand(develop):
 
 setup(
     name=NAME,
-    version="0.1.0",
     author=AUTHOR,
     description=DESCRIPTION,
     long_description=LONG_DESCRIPTION,
