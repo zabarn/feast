@@ -51,7 +51,7 @@ class EntityModel(BaseModel):
             tags=self.tags if self.tags else None,
             owner=self.owner,
         )
-        entity.created_timestamp = (self.created_timestamp,)
+        entity.created_timestamp = self.created_timestamp
         entity.last_updated_timestamp = self.last_updated_timestamp
         return entity
 
