@@ -23,13 +23,20 @@ from feast.expediagroup.pydantic_models.data_source_model import (
     SparkSourceModel,
 )
 from feast.expediagroup.pydantic_models.entity_model import EntityModel
-from feast.expediagroup.pydantic_models.feature_view_model import FeatureViewModel
+from feast.expediagroup.pydantic_models.feature_view_model import (
+    FeatureViewModel,
+    FeatureViewProjectionModel,
+)
 from feast.feature_view import FeatureView
+from feast.feature_view_projection import FeatureViewProjection
 from feast.field import Field
 from feast.infra.offline_stores.contrib.spark_offline_store.spark_source import (
     SparkSource,
 )
-from feast.types import Bool, Float32
+from feast.protos.feast.core.FeatureViewProjection_pb2 import (
+    FeatureViewProjection as FeatureViewProjectionProto,
+)
+from feast.types import Bool, Float32, Float64, String
 
 
 def test_datasource_child_deserialization():
@@ -139,6 +146,7 @@ def test_idempotent_featureview_conversion():
             Field(name="feature2", dtype=Float32),
         ],
         source=request_source,
+        ttl=0
     )
     feature_view_model = FeatureViewModel.from_feature_view(feature_view)
     feature_view_b = feature_view_model.to_feature_view()
@@ -163,3 +171,23 @@ def test_idempotent_featureview_conversion():
     feature_view_model = FeatureViewModel.from_feature_view(feature_view)
     feature_view_b = feature_view_model.to_feature_view()
     assert feature_view == feature_view_b
+
+
+def test_idempotent_feature_view_projection_conversion():
+    # Feast not using desired_features while converting to proto
+    python_obj = FeatureViewProjection(
+    name="example_projection",
+    name_alias="alias",
+    desired_features=["feature1", "feature2"],
+    features=[Field(name="feature1", dtype=Float64), Field(name="feature2", dtype=String),],
+    join_key_map={"old_key": "new_key"},
+    )
+    # Convert to Pydantic model
+    pydantic_obj = FeatureViewProjectionModel.from_feature_view_projection(python_obj)
+    # Convert back to Python model
+    converted_python_obj = pydantic_obj.to_feature_view_projection()
+    assert python_obj == converted_python_obj
+
+
+
+

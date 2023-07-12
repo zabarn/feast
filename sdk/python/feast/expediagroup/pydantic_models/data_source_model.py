@@ -4,17 +4,19 @@ Pydantic Model for Data Source
 Copyright 2023 Expedia Group
 Author: matcarlin@expediagroup.com
 """
-from typing import Dict, List, Literal, Optional, Union
+from json import dumps
+from typing import Callable, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel
 from pydantic import Field as PydanticField
-from typing_extensions import Annotated
+from typing_extensions import Annotated, Self
 
 from feast.data_source import RequestSource
 from feast.field import Field
 from feast.infra.offline_stores.contrib.spark_offline_store.spark_source import (
     SparkSource,
 )
+from feast.types import ComplexFeastType, PrimitiveFeastType
 
 
 class DataSourceModel(BaseModel):
@@ -57,8 +59,13 @@ class RequestSourceModel(DataSourceModel):
     class Config:
         arbitrary_types_allowed = True
         extra = "allow"
+        json_encoders: Dict[object, Callable] = {
+            Field: lambda v: int(dumps(v.value, default=str)),
+            ComplexFeastType: lambda v: str(v),
+            PrimitiveFeastType: lambda v: str(v),
+        }
 
-    def to_data_source(self):
+    def to_data_source(self) -> RequestSource:
         """
         Given a Pydantic RequestSourceModel, create and return a RequestSource.
 
@@ -83,7 +90,7 @@ class RequestSourceModel(DataSourceModel):
         return RequestSource(**params)
 
     @classmethod
-    def from_data_source(cls, data_source):
+    def from_data_source(cls, data_source) -> Self:
         """
         Converts a RequestSource object to its pydantic model representation.
 
@@ -121,7 +128,7 @@ class SparkSourceModel(DataSourceModel):
         arbitrary_types_allowed = True
         extra = "allow"
 
-    def to_data_source(self):
+    def to_data_source(self) -> SparkSource:
         """
         Given a Pydantic SparkSourceModel, create and return a SparkSource.
 
@@ -147,7 +154,7 @@ class SparkSourceModel(DataSourceModel):
         )
 
     @classmethod
-    def from_data_source(cls, data_source):
+    def from_data_source(cls, data_source) -> Self:
         """
         Converts a SparkSource object to its pydantic model representation.
 

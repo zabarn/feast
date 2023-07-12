@@ -9,7 +9,9 @@ from datetime import timedelta
 from json import dumps
 from typing import Callable, Dict, List, Optional
 
+import dill
 from pydantic import BaseModel
+from typing_extensions import Self
 
 from feast.data_source import DataSource
 from feast.entity import Entity
@@ -20,7 +22,9 @@ from feast.expediagroup.pydantic_models.data_source_model import (
 )
 from feast.expediagroup.pydantic_models.entity_model import EntityModel
 from feast.feature_view import FeatureView
+from feast.feature_view_projection import FeatureViewProjection
 from feast.field import Field
+from feast.on_demand_feature_view import OnDemandFeatureView
 from feast.types import ComplexFeastType, PrimitiveFeastType
 
 SUPPORTED_DATA_SOURCES = [RequestSourceModel, SparkSourceModel]
@@ -51,9 +55,10 @@ class FeatureViewModel(BaseModel):
             Entity: lambda v: v.to_pydantic_model(),
             ComplexFeastType: lambda v: str(v),
             PrimitiveFeastType: lambda v: str(v),
+            timedelta: lambda v: v.total_seconds() if v else 0
         }
 
-    def to_feature_view(self):
+    def to_feature_view(self) -> FeatureView:
         """
         Given a Pydantic FeatureViewModel, create and return a FeatureView.
 
@@ -90,7 +95,7 @@ class FeatureViewModel(BaseModel):
         return feature_view
 
     @classmethod
-    def from_feature_view(cls, feature_view):
+    def from_feature_view(cls, feature_view) -> Self:
         """
         Converts a FeatureView object to its pydantic model representation.
 
@@ -134,3 +139,113 @@ class FeatureViewModel(BaseModel):
             tags=feature_view.tags if feature_view.tags else None,
             owner=feature_view.owner,
         )
+
+
+class FeatureViewProjectionModel(BaseModel):
+    """
+    Pydantic Model of a Feast FeatureViewProjection.
+    """
+    name: str
+    name_alias: Optional[str]
+    desired_features: List[str]
+    features: List[Field]
+    join_key_map: Dict[str, str] = {}
+
+    class Config:
+        arbitrary_types_allowed = True
+        extra = "allow"
+        json_encoders: Dict[object, Callable] = {
+            Field: lambda v: int(dumps(v.value, default=str)),
+        }
+
+    def to_feature_view_projection(self) -> FeatureViewProjection:
+        return FeatureViewProjection(
+            name=self.name,
+            name_alias=self.name_alias,
+            desired_features=self.desired_features,
+            features=self.features,
+            join_key_map=self.join_key_map
+        )
+
+    @classmethod
+    def from_feature_view_projection(cls, feature_view_projection) -> Self:
+        return cls(
+            name=feature_view_projection.name,
+            name_alias=feature_view_projection.name_alias,
+            desired_features=feature_view_projection.desired_features,
+            features=feature_view_projection.features,
+            join_key_map=feature_view_projection.join_key_map
+        )
+
+
+class OnDemandFeatureViewModel(BaseModel):
+    """
+    Pydantic Model of a Feast OnDemandFeatureView.
+    """
+
+    name: str
+    features: List[Field]
+    source_feature_view_projections: Dict[str, FeatureViewProjectionModel]
+    source_request_sources: Dict[str, RequestSourceModel]
+    udf: bytes
+    udf_string: bytes
+    description: str
+    tags: Dict[str, str]
+    owner: str
+
+    class Config:
+        arbitrary_types_allowed = True
+        extra = "allow"
+        json_encoders: Dict[object, Callable] = {
+            Field: lambda v: int(dumps(v.value, default=str)),
+            DataSource: lambda v: v.to_pydantic_model(),
+            FeatureViewProjectionModel: lambda v: v.to_pydantic_model(),
+        }
+
+    def to_on_demand_feature_view(self) -> OnDemandFeatureView:
+        source_request_sources = dict()
+        if self.source_request_sources:
+            for key, feature_view_projection in self.source_request_sources.items():
+                source_request_sources[key] = feature_view_projection.to_data_source()
+
+        source_feature_view_projections = dict()
+        if self.source_feature_view_projections:
+            for key, feature_view_projection in self.source_feature_view_projections.items():
+                source_feature_view_projections[key] = feature_view_projection.to_feature_view_projection()
+
+        return OnDemandFeatureView(
+            name=self.name,
+            schema=self.features,
+            sources=list(source_feature_view_projections.values())
+            + list(source_request_sources.values()),
+            udf=dill.loads(self.udf),
+            udf_string=self.udf_string.decode(),
+            description=self.description,
+            tags=self.tags,
+            owner=self.owner,
+        )
+
+    @classmethod
+    def from_on_demand_feature_view(cls, on_demand_feature_view) -> Self:
+        source_request_sources = dict()
+        if on_demand_feature_view.source_request_sources:
+            for key, req_data_source in on_demand_feature_view.source_request_sources.items():
+                source_request_sources[key] = RequestSourceModel.from_data_source(req_data_source)
+
+        source_feature_view_projections = dict()
+        if on_demand_feature_view.source_feature_view_projections:
+            for key, feature_view_projection in on_demand_feature_view.source_feature_view_projections.items():
+                source_feature_view_projections[key] = FeatureViewProjectionModel.from_feature_view_projection(feature_view_projection)
+
+        return cls(
+            name=on_demand_feature_view.name,
+            features=on_demand_feature_view.features,
+            source_feature_view_projections=source_feature_view_projections,
+            source_request_sources=source_request_sources,
+            udf=dill.dumps(on_demand_feature_view.udf, recurse=True),
+            udf_string=on_demand_feature_view.udf_string.encode(),
+            description=on_demand_feature_view.description,
+            tags=on_demand_feature_view.tags,
+            owner=on_demand_feature_view.owner,
+        )
+    

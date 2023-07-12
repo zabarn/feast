@@ -49,10 +49,6 @@ class Field(BaseModel):
     class Config:
         arbitrary_types_allowed = True
         extra = "allow"
-        json_encoders: Dict[object, Callable] = {
-            ComplexFeastType: lambda v: str(v),
-            PrimitiveFeastType: lambda v: str(v),
-        }
 
     @validator("dtype", pre=True, always=True)
     def dtype_is_feasttype_or_string_feasttype(cls, v):
