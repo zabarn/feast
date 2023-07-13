@@ -30,7 +30,12 @@ from feast.types import ComplexFeastType, PrimitiveFeastType
 SUPPORTED_DATA_SOURCES = [RequestSourceModel, SparkSourceModel]
 
 
-class FeatureViewModel(BaseModel):
+class BaseFeatureViewModel(BaseModel):
+    """
+    Pydantic Model of a Feast BaseFeatureView.
+    """
+
+class FeatureViewModel(BaseFeatureViewModel):
     """
     Pydantic Model of a Feast FeatureView.
     """
@@ -147,8 +152,10 @@ class FeatureViewProjectionModel(BaseModel):
     """
     name: str
     name_alias: Optional[str]
-    desired_features: List[str]
     features: List[Field]
+    # desired_features is not used in FeatureViewProjection. So defaulting to [] in 
+    # conversion functions
+    desired_features: List[str] = []
     join_key_map: Dict[str, str] = {}
 
     class Config:
@@ -178,7 +185,7 @@ class FeatureViewProjectionModel(BaseModel):
         )
 
 
-class OnDemandFeatureViewModel(BaseModel):
+class OnDemandFeatureViewModel(BaseFeatureViewModel):
     """
     Pydantic Model of a Feast OnDemandFeatureView.
     """
@@ -198,8 +205,6 @@ class OnDemandFeatureViewModel(BaseModel):
         extra = "allow"
         json_encoders: Dict[object, Callable] = {
             Field: lambda v: int(dumps(v.value, default=str)),
-            DataSource: lambda v: v.to_pydantic_model(),
-            FeatureViewProjectionModel: lambda v: v.to_pydantic_model(),
         }
 
     def to_on_demand_feature_view(self) -> OnDemandFeatureView:
@@ -212,6 +217,8 @@ class OnDemandFeatureViewModel(BaseModel):
         if self.source_feature_view_projections:
             for key, feature_view_projection in self.source_feature_view_projections.items():
                 source_feature_view_projections[key] = feature_view_projection.to_feature_view_projection()
+
+                self.json()
 
         return OnDemandFeatureView(
             name=self.name,
@@ -248,4 +255,3 @@ class OnDemandFeatureViewModel(BaseModel):
             tags=on_demand_feature_view.tags,
             owner=on_demand_feature_view.owner,
         )
-    
