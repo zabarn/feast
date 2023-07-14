@@ -37,9 +37,6 @@ from feast.infra.offline_stores.contrib.spark_offline_store.spark_source import 
     SparkSource,
 )
 from feast.on_demand_feature_view import OnDemandFeatureView, on_demand_feature_view
-from feast.protos.feast.core.FeatureViewProjection_pb2 import (
-    FeatureViewProjection as FeatureViewProjectionProto,
-)
 from feast.protos.feast.core.OnDemandFeatureView_pb2 import OnDemandFeatureViewMeta
 from feast.types import Bool, Float32, Float64, String
 from feast.value_type import ValueType
@@ -152,7 +149,7 @@ def test_idempotent_featureview_conversion():
             Field(name="feature2", dtype=Float32),
         ],
         source=request_source,
-        ttl=0
+        ttl=timedelta(days=0),
     )
     feature_view_model = FeatureViewModel.from_feature_view(feature_view)
     feature_view_b = feature_view_model.to_feature_view()
@@ -182,11 +179,14 @@ def test_idempotent_featureview_conversion():
 def test_idempotent_feature_view_projection_conversion():
     # Feast not using desired_features while converting to proto
     python_obj = FeatureViewProjection(
-    name="example_projection",
-    name_alias="alias",
-    desired_features=[],
-    features=[Field(name="feature1", dtype=Float64), Field(name="feature2", dtype=String),],
-    join_key_map={"old_key": "new_key"},
+        name="example_projection",
+        name_alias="alias",
+        desired_features=[],
+        features=[
+            Field(name="feature1", dtype=Float64),
+            Field(name="feature2", dtype=String),
+        ],
+        join_key_map={"old_key": "new_key"},
     )
     # Convert to Pydantic model
     pydantic_obj = FeatureViewProjectionModel.from_feature_view_projection(python_obj)
@@ -194,139 +194,154 @@ def test_idempotent_feature_view_projection_conversion():
     converted_python_obj = pydantic_obj.to_feature_view_projection()
     assert python_obj == converted_python_obj
 
+
 def test_idempotent_on_demand_feature_view_conversion():
     tags = {
-        "application": "feature-store-feast-demo",
-        "team": "ML Platform - Feature Lifecycle",
-        "owner": "MLPlatform-FeatureLifecycle@expediagroup.com",
-        "product": "unified-feature-store",
-        "costCenter": "80481",
+        "tag1": "val1",
+        "tag2": "val2",
+        "tag3": "val3",
     }
 
     """
-        Entity is a collection of semantically related features.  
+        Entity is a collection of semantically related features.
     """
-    hotel_entity: Entity = Entity(
-        name="eg_property_id",
+    entity1: Entity = Entity(
+        name="entity1",
         description="eg_property_id",
         value_type=ValueType.INT64,
-        owner="bdodla@expediagroup.com",
+        owner="x@xyz.com",
         tags=tags,
     )
 
-    region_entity: Entity = Entity(
-        name="region_id",
+    entity2: Entity = Entity(
+        name="entity2",
         description="region_id",
         value_type=ValueType.INT64,
-        owner="bdodla@expediagroup.com",
+        owner="x@zyz.com",
         tags=tags,
     )
 
     """
-        Data source refers to raw features data that users own. Feature Store 
-        does not manage any of the raw underlying data but instead, oversees 
-        loading this data and performing different operations on 
+        Data source refers to raw features data that users own. Feature Store
+        does not manage any of the raw underlying data but instead, oversees
+        loading this data and performing different operations on
         the data to retrieve or serve features.
 
         Feast uses a time-series data model to represent data.
     """
 
-    lodging_profile_datasource: SparkSource = SparkSource(
-        name="lodging_profile",
-        description="EG Lodging Profile",
-        query="""select eg_property_id
-                    , property_name
-                    , structure_category_name
-                    , latitude
-                    , longitude
-                    , country_code
+    datasource1: SparkSource = SparkSource(
+        name="datasource1",
+        description="datasource1",
+        query="""select entity1
+                    , val1
+                    , val2
+                    , val3
+                    , val4
+                    , val5
                     , CURRENT_DATE AS event_timestamp
-                from egdp_test_supply.lodging_profile_eg_v5
-                WHERE eg_property_id < 100000""",
+                from table1
+                WHERE entity1 < 100000""",
         timestamp_field="event_timestamp",
         tags=tags,
-        owner="bdodla@expediagroup.com",
+        owner="x@xyz.com",
     )
 
-    region_info_datasource: SparkSource = SparkSource(
-        name="region_info",
-        description="EG Region Info",
-        path="s3a://ufs-feast-redshift-staging-test-935051678728-us-east-1/ufs_feast_demo/demo_region_info",
+    datasource2: SparkSource = SparkSource(
+        name="datasource2",
+        description="datasource2",
+        path="s3a://test-bucket/path1/datasource2",
         file_format="parquet",
         timestamp_field="event_timestamp",
         tags=tags,
-        owner="bdodla@expediagroup.com",
+        owner="x@xyz.com",
     )
 
     """
-        A feature view is an object that represents a logical group 
+        A feature view is an object that represents a logical group
         of time-series feature data as it is found in a data source.
     """
 
-    lodging_profile_view: FeatureView = FeatureView(
-        name="lodging_profile",
-        entities=[hotel_entity],
+    view1: FeatureView = FeatureView(
+        name="view1",
+        entities=[entity1],
         ttl=timedelta(days=365),
-        source=lodging_profile_datasource,
+        source=datasource1,
         tags=tags,
-        description="EG Lodging Profile",
-        owner="bdodla@expediagroup.com",
+        description="view1",
+        owner="x@xyz.com",
         schema=[
-            Field(name="property_name", dtype=String),
-            Field(name="structure_category_name", dtype=String),
-            Field(name="latitude", dtype=Float64),
-            Field(name="longitude", dtype=Float64),
-            Field(name="country_code", dtype=String),
+            Field(name="val1", dtype=String),
+            Field(name="val2", dtype=String),
+            Field(name="val3", dtype=Float64),
+            Field(name="val4", dtype=Float64),
+            Field(name="val5", dtype=String),
         ],
     )
 
-    region_info_view: FeatureView = FeatureView(
-        name="region_info",
-        entities=[region_entity],
+    view2: FeatureView = FeatureView(
+        name="view2",
+        entities=[entity2],
         ttl=timedelta(days=365),
-        source=region_info_datasource,
+        source=datasource2,
         tags=tags,
-        description="EG Region Info",
-        owner="bdodla@expediagroup.com",
+        description="view2",
+        owner="x@xyz.com",
         schema=[
-            Field(name="regioncenterlongitude", dtype=Float64),
-            Field(name="regioncenterlatitude", dtype=Float64),
-            Field(name="regiontype", dtype=String),
+            Field(name="r1", dtype=Float64),
+            Field(name="r2", dtype=Float64),
+            Field(name="r3", dtype=String),
         ],
     )
 
     distance_decorator = on_demand_feature_view(
-    sources=[lodging_profile_view, region_info_view],
-    schema=[
-        Field(name="distance_in_kms", dtype=Float64)
-    ],
+        sources=[view1, view2],
+        schema=[Field(name="distance_in_kms", dtype=Float64)],
     )
 
     def calculate_distance_demo_go(features_df: pd.DataFrame) -> pd.DataFrame:
         import numpy as np
+
         df = pd.DataFrame()
         # Haversine formula
         # Radius of earth in kilometers. Use 3956 for miles
         r = 6371
 
         # calculate the result
-        df["distance_in_kms"] = (2 * np.arcsin(np.sqrt(np.sin(
-            (np.radians(features_df["latitude"]) - np.radians(
-                features_df["regioncenterlatitude"])) / 2) ** 2 + np.cos(
-            np.radians(features_df["regioncenterlatitude"])) * np.cos(
-            np.radians(features_df["latitude"])) * np.sin(
-            (np.radians(features_df["longitude"]) - np.radians(
-                features_df["regioncenterlongitude"])) / 2) ** 2)) * r)
+        df["distance_in_kms"] = (
+            2
+            * np.arcsin(
+                np.sqrt(
+                    np.sin(
+                        (
+                            np.radians(features_df["val3"])
+                            - np.radians(features_df["r1"])
+                        )
+                        / 2
+                    )
+                    ** 2
+                    + np.cos(np.radians(features_df["r1"]))
+                    * np.cos(np.radians(features_df["val3"]))
+                    * np.sin(
+                        (
+                            np.radians(features_df["val4"])
+                            - np.radians(features_df["r2"])
+                        )
+                        / 2
+                    )
+                    ** 2
+                )
+            )
+            * r
+        )
 
         return df
 
     python_obj = distance_decorator(calculate_distance_demo_go)
-    pydantic_obj = OnDemandFeatureViewModel.from_on_demand_feature_view(python_obj)
-    converted_python_obj = pydantic_obj.to_on_demand_feature_view()
+    pydantic_obj = OnDemandFeatureViewModel.from_feature_view(python_obj)
+    converted_python_obj = pydantic_obj.to_feature_view()
     assert python_obj == converted_python_obj
 
     feast_proto: OnDemandFeatureViewMeta = converted_python_obj.to_proto()
     python_obj_from_proto = OnDemandFeatureView.from_proto(feast_proto)
     assert python_obj_from_proto == converted_python_obj
-    
-

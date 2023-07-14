@@ -57,7 +57,10 @@ class EntityModel(BaseModel):
         return entity
 
     @classmethod
-    def from_entity(cls, entity) -> Self:
+    def from_entity(
+        cls,
+        entity,
+    ) -> Self:  # type: ignore
         """
         Converts an entity object to its pydantic model representation.
 

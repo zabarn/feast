@@ -54,7 +54,9 @@ class FeatureViewProjection:
         feature_view_projection = FeatureViewProjection(
             name=proto.feature_view_name,
             # TODO: Its a temporary fix to support conversion from feast models to pydantic models after its registered in Registry
-            name_alias=proto.feature_view_name_alias if proto.feature_view_name_alias!="" else None,
+            name_alias=proto.feature_view_name_alias
+            if proto.feature_view_name_alias != ""
+            else None,
             features=[],
             join_key_map=dict(proto.join_key_map),
             desired_features=[],

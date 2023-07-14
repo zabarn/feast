@@ -35,6 +35,7 @@ class BaseFeatureViewModel(BaseModel):
     Pydantic Model of a Feast BaseFeatureView.
     """
 
+
 class FeatureViewModel(BaseFeatureViewModel):
     """
     Pydantic Model of a Feast FeatureView.
@@ -60,7 +61,7 @@ class FeatureViewModel(BaseFeatureViewModel):
             Entity: lambda v: v.to_pydantic_model(),
             ComplexFeastType: lambda v: str(v),
             PrimitiveFeastType: lambda v: str(v),
-            timedelta: lambda v: v.total_seconds() if v else 0
+            timedelta: lambda v: v.total_seconds() if v else 0,
         }
 
     def to_feature_view(self) -> FeatureView:
@@ -100,7 +101,10 @@ class FeatureViewModel(BaseFeatureViewModel):
         return feature_view
 
     @classmethod
-    def from_feature_view(cls, feature_view) -> Self:
+    def from_feature_view(
+        cls,
+        feature_view,
+    ) -> Self:  # type: ignore
         """
         Converts a FeatureView object to its pydantic model representation.
 
@@ -150,10 +154,11 @@ class FeatureViewProjectionModel(BaseModel):
     """
     Pydantic Model of a Feast FeatureViewProjection.
     """
+
     name: str
     name_alias: Optional[str]
     features: List[Field]
-    # desired_features is not used in FeatureViewProjection. So defaulting to [] in 
+    # desired_features is not used in FeatureViewProjection. So defaulting to [] in
     # conversion functions
     desired_features: List[str] = []
     join_key_map: Dict[str, str] = {}
@@ -171,17 +176,20 @@ class FeatureViewProjectionModel(BaseModel):
             name_alias=self.name_alias,
             desired_features=self.desired_features,
             features=self.features,
-            join_key_map=self.join_key_map
+            join_key_map=self.join_key_map,
         )
 
     @classmethod
-    def from_feature_view_projection(cls, feature_view_projection) -> Self:
+    def from_feature_view_projection(
+        cls,
+        feature_view_projection,
+    ) -> Self:  # type: ignore
         return cls(
             name=feature_view_projection.name,
             name_alias=feature_view_projection.name_alias,
             desired_features=feature_view_projection.desired_features,
             features=feature_view_projection.features,
-            join_key_map=feature_view_projection.join_key_map
+            join_key_map=feature_view_projection.join_key_map,
         )
 
 
@@ -209,7 +217,7 @@ class OnDemandFeatureViewModel(BaseFeatureViewModel):
             PrimitiveFeastType: lambda v: str(v),
         }
 
-    def to_on_demand_feature_view(self) -> OnDemandFeatureView:
+    def to_feature_view(self) -> OnDemandFeatureView:
         source_request_sources = dict()
         if self.source_request_sources:
             for key, feature_view_projection in self.source_request_sources.items():
@@ -217,8 +225,13 @@ class OnDemandFeatureViewModel(BaseFeatureViewModel):
 
         source_feature_view_projections = dict()
         if self.source_feature_view_projections:
-            for key, feature_view_projection in self.source_feature_view_projections.items():
-                source_feature_view_projections[key] = feature_view_projection.to_feature_view_projection()
+            for (
+                key,
+                feature_view_projection,
+            ) in self.source_feature_view_projections.items():
+                source_feature_view_projections[
+                    key
+                ] = feature_view_projection.to_feature_view_projection()
 
         return OnDemandFeatureView(
             name=self.name,
@@ -233,16 +246,31 @@ class OnDemandFeatureViewModel(BaseFeatureViewModel):
         )
 
     @classmethod
-    def from_on_demand_feature_view(cls, on_demand_feature_view) -> Self:
+    def from_feature_view(
+        cls,
+        on_demand_feature_view,
+    ) -> Self:  # type: ignore
         source_request_sources = dict()
         if on_demand_feature_view.source_request_sources:
-            for key, req_data_source in on_demand_feature_view.source_request_sources.items():
-                source_request_sources[key] = RequestSourceModel.from_data_source(req_data_source)
+            for (
+                key,
+                req_data_source,
+            ) in on_demand_feature_view.source_request_sources.items():
+                source_request_sources[key] = RequestSourceModel.from_data_source(
+                    req_data_source
+                )
 
         source_feature_view_projections = dict()
         if on_demand_feature_view.source_feature_view_projections:
-            for key, feature_view_projection in on_demand_feature_view.source_feature_view_projections.items():
-                source_feature_view_projections[key] = FeatureViewProjectionModel.from_feature_view_projection(feature_view_projection)
+            for (
+                key,
+                feature_view_projection,
+            ) in on_demand_feature_view.source_feature_view_projections.items():
+                source_feature_view_projections[
+                    key
+                ] = FeatureViewProjectionModel.from_feature_view_projection(
+                    feature_view_projection
+                )
 
         return cls(
             name=on_demand_feature_view.name,
@@ -255,4 +283,3 @@ class OnDemandFeatureViewModel(BaseFeatureViewModel):
             tags=on_demand_feature_view.tags,
             owner=on_demand_feature_view.owner,
         )
-

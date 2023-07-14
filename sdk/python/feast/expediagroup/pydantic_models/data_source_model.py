@@ -78,7 +78,7 @@ class RequestSourceModel(DataSourceModel):
             "tags": self.tags if self.tags else None,
             "owner": self.owner,
         }
-        params["schema"] = [
+        params["schema"] = [    # type: ignore
             Field(
                 name=sch.name,
                 dtype=sch.dtype,
@@ -87,10 +87,13 @@ class RequestSourceModel(DataSourceModel):
             )
             for sch in self.schema_
         ]
-        return RequestSource(**params)
+        return RequestSource(**params)  # type: ignore
 
     @classmethod
-    def from_data_source(cls, data_source) -> Self:
+    def from_data_source(
+        cls,
+        data_source,
+    ) -> Self:  # type: ignore
         """
         Converts a RequestSource object to its pydantic model representation.
 
@@ -154,7 +157,10 @@ class SparkSourceModel(DataSourceModel):
         )
 
     @classmethod
-    def from_data_source(cls, data_source) -> Self:
+    def from_data_source(
+        cls,
+        data_source,
+    ) -> Self:  # type: ignore
         """
         Converts a SparkSource object to its pydantic model representation.
 

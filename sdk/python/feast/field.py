@@ -12,20 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Callable, Dict, Optional
+from typing import Dict, Optional
 
 from pydantic import BaseModel, validator
 from typeguard import check_type, typechecked
 
 from feast.feature import Feature
 from feast.protos.feast.core.Feature_pb2 import FeatureSpecV2 as FieldProto
-from feast.types import (
-    ComplexFeastType,
-    FeastType,
-    PrimitiveFeastType,
-    from_string,
-    from_value_type,
-)
+from feast.types import FeastType, from_string, from_value_type
 from feast.value_type import ValueType
 
 

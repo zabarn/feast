@@ -140,7 +140,7 @@ class FeatureView(BaseFeatureView):
         # making it impossible to convert idempotently to another format.
         # store these arguments to recover them in conversions.
         self.original_schema = schema
-        self.original_entities: List[Entity]= entities or []
+        self.original_entities: List[Entity] = entities or []
 
         schema = schema or []
 
@@ -352,7 +352,7 @@ class FeatureView(BaseFeatureView):
 
         original_entities: List[EntityProto] = []
         for entity in self.original_entities:
-                original_entities.append(entity.to_proto())
+            original_entities.append(entity.to_proto())
 
         spec = FeatureViewSpecProto(
             name=self.name,
@@ -366,7 +366,7 @@ class FeatureView(BaseFeatureView):
             online=self.online,
             batch_source=batch_source_proto,
             stream_source=stream_source_proto,
-            original_entities=original_entities
+            original_entities=original_entities,
         )
 
         return FeatureViewProto(spec=spec, meta=meta)
@@ -426,7 +426,10 @@ class FeatureView(BaseFeatureView):
 
         # This avoids the deprecation warning.
         feature_view.entities = list(feature_view_proto.spec.entities)
-        feature_view.original_entities = [Entity.from_proto(entity) for entity in feature_view_proto.spec.original_entities]
+        feature_view.original_entities = [
+            Entity.from_proto(entity)
+            for entity in feature_view_proto.spec.original_entities
+        ]
 
         # Instead of passing in a schema, we set the features and entity columns.
         feature_view.features = [
