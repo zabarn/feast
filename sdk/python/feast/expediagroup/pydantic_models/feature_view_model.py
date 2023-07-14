@@ -194,8 +194,8 @@ class OnDemandFeatureViewModel(BaseFeatureViewModel):
     features: List[Field]
     source_feature_view_projections: Dict[str, FeatureViewProjectionModel]
     source_request_sources: Dict[str, RequestSourceModel]
-    udf: bytes
-    udf_string: bytes
+    udf: str
+    udf_string: str
     description: str
     tags: Dict[str, str]
     owner: str
@@ -205,6 +205,8 @@ class OnDemandFeatureViewModel(BaseFeatureViewModel):
         extra = "allow"
         json_encoders: Dict[object, Callable] = {
             Field: lambda v: int(dumps(v.value, default=str)),
+            ComplexFeastType: lambda v: str(v),
+            PrimitiveFeastType: lambda v: str(v),
         }
 
     def to_on_demand_feature_view(self) -> OnDemandFeatureView:
@@ -218,15 +220,13 @@ class OnDemandFeatureViewModel(BaseFeatureViewModel):
             for key, feature_view_projection in self.source_feature_view_projections.items():
                 source_feature_view_projections[key] = feature_view_projection.to_feature_view_projection()
 
-                self.json()
-
         return OnDemandFeatureView(
             name=self.name,
             schema=self.features,
             sources=list(source_feature_view_projections.values())
             + list(source_request_sources.values()),
-            udf=dill.loads(self.udf),
-            udf_string=self.udf_string.decode(),
+            udf=dill.loads(bytes.fromhex(self.udf)),
+            udf_string=self.udf_string,
             description=self.description,
             tags=self.tags,
             owner=self.owner,
@@ -249,9 +249,10 @@ class OnDemandFeatureViewModel(BaseFeatureViewModel):
             features=on_demand_feature_view.features,
             source_feature_view_projections=source_feature_view_projections,
             source_request_sources=source_request_sources,
-            udf=dill.dumps(on_demand_feature_view.udf, recurse=True),
-            udf_string=on_demand_feature_view.udf_string.encode(),
+            udf=dill.dumps(on_demand_feature_view.udf, recurse=True).hex(),
+            udf_string=on_demand_feature_view.udf_string,
             description=on_demand_feature_view.description,
             tags=on_demand_feature_view.tags,
             owner=on_demand_feature_view.owner,
         )
+
