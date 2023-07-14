@@ -78,7 +78,7 @@ class RequestSourceModel(DataSourceModel):
             "tags": self.tags if self.tags else None,
             "owner": self.owner,
         }
-        params["schema"] = [    # type: ignore
+        params["schema"] = [  # type: ignore
             Field(
                 name=sch.name,
                 dtype=sch.dtype,
