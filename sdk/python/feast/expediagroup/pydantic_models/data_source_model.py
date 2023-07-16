@@ -78,15 +78,19 @@ class RequestSourceModel(DataSourceModel):
             "tags": self.tags if self.tags else None,
             "owner": self.owner,
         }
-        params["schema"] = [  # type: ignore
-            Field(
-                name=sch.name,
-                dtype=sch.dtype,
-                description=sch.description,
-                tags=sch.tags,
-            )
-            for sch in self.schema_
-        ]
+
+        # TODO: It is a temporary fix to solve decoding errors from (json or dict) to RequestSourceModel.
+        # example:
+        # obj = type_RequestSourceModel # Schema: [val_to_add-Int64, val_to_add_2-Int64]
+        # json_obj = obj.json() # Schema: [{'name': 'val_to_add', 'dtype': 'Int64', 'description': '', 'tags': {}}, {'name': 'val_to_add_2', 'dtype': 'Int64', 'description': '', 'tags': {}}]
+        # print(RequestSourceModel.parse_raw(json_obj))  # Schema: [{'name': 'val_to_add', 'dtype': 'Int64', 'description': '', 'tags': {}}, {'name': 'val_to_add_2', 'dtype': 'Int64', 'description': '', 'tags': {}}]
+        # Expected is Schema: [val_to_add-Int64, val_to_add_2-Int64]
+        schema_list = self.schema_
+        if isinstance(schema_list, list) and all(isinstance(item, dict) for item in schema_list):
+            params["schema"] = [Field(name=sch['name'], dtype=sch['dtype'], description=sch['description'], tags=sch['tags']) for sch in schema_list]
+        if isinstance(schema_list, list) and all(isinstance(item, Field) for item in schema_list):
+            params["schema"] = schema_list
+
         return RequestSource(**params)  # type: ignore
 
     @classmethod
