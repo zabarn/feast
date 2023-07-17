@@ -138,13 +138,13 @@ class Array(ComplexFeastType):
 
     base_type: Union[PrimitiveFeastType, ComplexFeastType]
 
-    @validator("base_type", pre=True, always=True)
-    def base_type_is_supported(cls, base_type):
-        if base_type not in SUPPORTED_BASE_TYPES:
-            raise ValueError(
-                f"Type {type(base_type)} is currently not supported as a base type for Array."
-            )
-        return base_type
+    # @validator("base_type", pre=True, always=True)
+    # def base_type_is_supported(cls, base_type):
+    #     if base_type not in SUPPORTED_BASE_TYPES:
+    #         raise ValueError(
+    #             f"Type {type(base_type)} is currently not supported as a base type for Array."
+    #         )
+    #     return base_type
 
     def __init__(self, base_type: Union[PrimitiveFeastType, ComplexFeastType]):
         super(Array, self).__init__(base_type=base_type)

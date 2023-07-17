@@ -30,6 +30,7 @@ from feast.expediagroup.pydantic_models.feature_view_model import (
     FeatureViewProjectionModel,
     OnDemandFeatureViewModel,
 )
+from feast.expediagroup.pydantic_models.field import FieldModel
 from feast.feature_view import FeatureView
 from feast.feature_view_projection import FeatureViewProjection
 from feast.field import Field
@@ -38,8 +39,42 @@ from feast.infra.offline_stores.contrib.spark_offline_store.spark_source import 
 )
 from feast.on_demand_feature_view import OnDemandFeatureView, on_demand_feature_view
 from feast.protos.feast.core.OnDemandFeatureView_pb2 import OnDemandFeatureViewMeta
-from feast.types import Bool, Float32, Float64, String
+from feast.types import Array, Bool, Float32, Float64, Int64, String
 from feast.value_type import ValueType
+
+
+def test_idempotent_field_primitive_type_conversion():
+    python_obj = Field(name="val_to_add", dtype=Int64)
+    pydantic_obj = FieldModel.from_field(python_obj)
+    converted_python_obj = pydantic_obj.to_field()
+    assert python_obj == converted_python_obj
+
+    feast_proto = converted_python_obj.to_proto()
+    python_obj_from_proto = Field.from_proto(feast_proto)
+    assert python_obj == python_obj_from_proto
+
+    pydantic_json = pydantic_obj.json()
+    assert pydantic_obj == FieldModel.parse_raw(pydantic_json)
+
+    pydantic_dict = pydantic_obj.dict()
+    assert pydantic_obj == FieldModel.parse_obj(pydantic_dict)
+
+
+def test_idempotent_field_complex_array_type_conversion():
+    python_obj = Field(name="val_to_add", dtype=Array(Int64))
+    pydantic_obj = FieldModel.from_field(python_obj)
+    converted_python_obj = pydantic_obj.to_field()
+    assert python_obj == converted_python_obj
+
+    feast_proto = converted_python_obj.to_proto()
+    python_obj_from_proto = Field.from_proto(feast_proto)
+    assert python_obj == python_obj_from_proto
+
+    pydantic_json = pydantic_obj.json()
+    assert pydantic_obj == FieldModel.parse_raw(pydantic_json)
+
+    pydantic_dict = pydantic_obj.dict()
+    assert pydantic_obj == FieldModel.parse_obj(pydantic_dict)
 
 
 def test_datasource_child_deserialization():

@@ -12,6 +12,7 @@ from pydantic import Field as PydanticField
 from typing_extensions import Annotated, Self
 
 from feast.data_source import RequestSource
+from feast.expediagroup.pydantic_models.field import FieldModel
 from feast.field import Field
 from feast.infra.offline_stores.contrib.spark_offline_store.spark_source import (
     SparkSource,
@@ -51,19 +52,19 @@ class RequestSourceModel(DataSourceModel):
 
     name: str
     model_type: Literal["RequestSourceModel"] = "RequestSourceModel"
-    schema_: List[Field] = PydanticField(None, alias="schema")
+    schema_: List[FieldModel] = PydanticField(None, alias="schema")
     description: Optional[str] = ""
     tags: Optional[Dict[str, str]] = None
     owner: Optional[str] = ""
 
-    class Config:
-        arbitrary_types_allowed = True
-        extra = "allow"
-        json_encoders: Dict[object, Callable] = {
-            Field: lambda v: int(dumps(v.value, default=str)),
-            ComplexFeastType: lambda v: str(v),
-            PrimitiveFeastType: lambda v: str(v),
-        }
+    # class Config:
+    #     arbitrary_types_allowed = True
+    #     extra = "allow"
+    #     json_encoders: Dict[object, Callable] = {
+    #         Field: lambda v: int(dumps(v.value, default=str)),
+    #         ComplexFeastType: lambda v: str(v),
+    #         PrimitiveFeastType: lambda v: str(v),
+    #     }
 
     def to_data_source(self) -> RequestSource:
         """
@@ -72,26 +73,46 @@ class RequestSourceModel(DataSourceModel):
         Returns:
             A RequestSource.
         """
-        params = {
-            "name": self.name,
-            "description": self.description,
-            "tags": self.tags if self.tags else None,
-            "owner": self.owner,
-        }
+        return RequestSource(
+            name=self.name,
+            schema=[sch.to_field() for sch in self.schema_],
+            description=self.description,
+            tags=self.tags,
+            owner=self.owner,
+        )
+        # params = {
+        #     "name": self.name,
+        #     "description": self.description,
+        #     "tags": self.tags if self.tags else None,
+        #     "owner": self.owner,
+        # }
+        # params["schema"] = [sch.to_field() for sch in self.schema_]
 
-        # TODO: It is a temporary fix to solve decoding errors from (json or dict) to RequestSourceModel.
+        # TODO: It is a temporary fix to solve deserialization issue from (json or dict) to RequestSourceModel.
         # example:
         # obj = type_RequestSourceModel # Schema: [val_to_add-Int64, val_to_add_2-Int64]
         # json_obj = obj.json() # Schema: [{'name': 'val_to_add', 'dtype': 'Int64', 'description': '', 'tags': {}}, {'name': 'val_to_add_2', 'dtype': 'Int64', 'description': '', 'tags': {}}]
         # print(RequestSourceModel.parse_raw(json_obj))  # Schema: [{'name': 'val_to_add', 'dtype': 'Int64', 'description': '', 'tags': {}}, {'name': 'val_to_add_2', 'dtype': 'Int64', 'description': '', 'tags': {}}]
         # Expected is Schema: [val_to_add-Int64, val_to_add_2-Int64]
-        schema_list = self.schema_
-        if isinstance(schema_list, list) and all(isinstance(item, dict) for item in schema_list):
-            params["schema"] = [Field(name=sch['name'], dtype=sch['dtype'], description=sch['description'], tags=sch['tags']) for sch in schema_list]
-        if isinstance(schema_list, list) and all(isinstance(item, Field) for item in schema_list):
-            params["schema"] = schema_list
+        # schema_list = self.schema_
+        # if isinstance(schema_list, list) and all(
+        #     isinstance(item, dict) for item in schema_list
+        # ):
+        #     params["schema"] = [
+        #         Field(
+        #             name=sch["name"],
+        #             dtype=sch["dtype"],
+        #             description=sch["description"],
+        #             tags=sch["tags"],
+        #         )
+        #         for sch in schema_list
+        #     ]
+        # if isinstance(schema_list, list) and all(
+        #     isinstance(item, Field) for item in schema_list
+        # ):
+        #     params["schema"] = schema_list
 
-        return RequestSource(**params)  # type: ignore
+        # return RequestSource(**params)  # type: ignore
 
     @classmethod
     def from_data_source(
@@ -106,7 +127,9 @@ class RequestSourceModel(DataSourceModel):
         """
         return cls(
             name=data_source.name,
-            schema=data_source.schema,
+            schema=[
+                FieldModel.from_field(ds_schema) for ds_schema in data_source.schema
+            ],
             description=data_source.description,
             tags=data_source.tags if data_source.tags else None,
             owner=data_source.owner,
