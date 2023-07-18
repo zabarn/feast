@@ -6,26 +6,22 @@ Author: matcarlin@expediagroup.com
 """
 import sys
 from datetime import timedelta
-from json import dumps
-from typing import Callable, Dict, List, Optional
+from typing import Dict, List, Optional
 
 import dill
 from pydantic import BaseModel
 from typing_extensions import Self
 
-from feast.data_source import DataSource
-from feast.entity import Entity
 from feast.expediagroup.pydantic_models.data_source_model import (
     AnyDataSource,
     RequestSourceModel,
     SparkSourceModel,
 )
 from feast.expediagroup.pydantic_models.entity_model import EntityModel
+from feast.expediagroup.pydantic_models.field_model import FieldModel
 from feast.feature_view import FeatureView
 from feast.feature_view_projection import FeatureViewProjection
-from feast.field import Field
 from feast.on_demand_feature_view import OnDemandFeatureView
-from feast.types import ComplexFeastType, PrimitiveFeastType
 
 SUPPORTED_DATA_SOURCES = [RequestSourceModel, SparkSourceModel]
 
@@ -35,6 +31,25 @@ class BaseFeatureViewModel(BaseModel):
     Pydantic Model of a Feast BaseFeatureView.
     """
 
+    def to_feature_view(self):
+        """
+        Given a Pydantic BaseFeatureViewModel, create and return a FeatureView.
+
+        Returns:
+            A FeatureView.
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def from_feature_view(cls, feature_view):
+        """
+        Converts a FeatureView object to its pydantic model representation.
+
+        Returns:
+            A BaseFeatureViewModel.
+        """
+        raise NotImplementedError
+
 
 class FeatureViewModel(BaseFeatureViewModel):
     """
@@ -43,26 +58,14 @@ class FeatureViewModel(BaseFeatureViewModel):
 
     name: str
     original_entities: List[EntityModel] = []
-    original_schema: Optional[List[Field]] = None
+    original_schema: Optional[List[FieldModel]]
     ttl: Optional[timedelta]
     batch_source: AnyDataSource
     stream_source: Optional[AnyDataSource]
-    online: bool = True
-    description: str = ""
-    tags: Optional[Dict[str, str]] = None
-    owner: str = ""
-
-    class Config:
-        arbitrary_types_allowed = True
-        extra = "allow"
-        json_encoders: Dict[object, Callable] = {
-            Field: lambda v: int(dumps(v.value, default=str)),
-            DataSource: lambda v: v.to_pydantic_model(),
-            Entity: lambda v: v.to_pydantic_model(),
-            ComplexFeastType: lambda v: str(v),
-            PrimitiveFeastType: lambda v: str(v),
-            timedelta: lambda v: v.total_seconds() if v else 0,
-        }
+    online: bool
+    description: str
+    tags: Optional[Dict[str, str]]
+    owner: str
 
     def to_feature_view(self) -> FeatureView:
         """
@@ -89,7 +92,9 @@ class FeatureViewModel(BaseFeatureViewModel):
         feature_view = FeatureView(
             name=self.name,
             source=source,
-            schema=self.original_schema,
+            schema=[sch.to_field() for sch in self.original_schema]
+            if self.original_schema is not None
+            else None,
             entities=[entity.to_entity() for entity in self.original_entities],
             ttl=self.ttl,
             online=self.online,
@@ -103,7 +108,7 @@ class FeatureViewModel(BaseFeatureViewModel):
     @classmethod
     def from_feature_view(
         cls,
-        feature_view,
+        feature_view: FeatureView,
     ) -> Self:  # type: ignore
         """
         Converts a FeatureView object to its pydantic model representation.
@@ -140,7 +145,12 @@ class FeatureViewModel(BaseFeatureViewModel):
                 for entity in feature_view.original_entities
             ],
             ttl=feature_view.ttl,
-            original_schema=feature_view.original_schema,
+            original_schema=[
+                FieldModel.from_field(fv_schema)
+                for fv_schema in feature_view.original_schema
+            ]
+            if feature_view.original_schema is not None
+            else None,
             batch_source=batch_source,
             stream_source=stream_source,
             online=feature_view.online,
@@ -157,38 +167,32 @@ class FeatureViewProjectionModel(BaseModel):
 
     name: str
     name_alias: Optional[str]
-    features: List[Field]
-    # desired_features is not used in FeatureViewProjection. So defaulting to [] in
-    # conversion functions
-    desired_features: List[str] = []
-    join_key_map: Dict[str, str] = {}
-
-    class Config:
-        arbitrary_types_allowed = True
-        extra = "allow"
-        json_encoders: Dict[object, Callable] = {
-            Field: lambda v: int(dumps(v.value, default=str)),
-        }
+    features: List[FieldModel]
+    desired_features: List[str]
+    join_key_map: Dict[str, str]
 
     def to_feature_view_projection(self) -> FeatureViewProjection:
         return FeatureViewProjection(
             name=self.name,
             name_alias=self.name_alias,
             desired_features=self.desired_features,
-            features=self.features,
+            features=[sch.to_field() for sch in self.features],
             join_key_map=self.join_key_map,
         )
 
     @classmethod
     def from_feature_view_projection(
         cls,
-        feature_view_projection,
+        feature_view_projection: FeatureViewProjection,
     ) -> Self:  # type: ignore
         return cls(
             name=feature_view_projection.name,
             name_alias=feature_view_projection.name_alias,
             desired_features=feature_view_projection.desired_features,
-            features=feature_view_projection.features,
+            features=[
+                FieldModel.from_field(feature)
+                for feature in feature_view_projection.features
+            ],
             join_key_map=feature_view_projection.join_key_map,
         )
 
@@ -199,7 +203,7 @@ class OnDemandFeatureViewModel(BaseFeatureViewModel):
     """
 
     name: str
-    features: List[Field]
+    features: List[FieldModel]
     source_feature_view_projections: Dict[str, FeatureViewProjectionModel]
     source_request_sources: Dict[str, RequestSourceModel]
     udf: str
@@ -207,15 +211,6 @@ class OnDemandFeatureViewModel(BaseFeatureViewModel):
     description: str
     tags: Dict[str, str]
     owner: str
-
-    class Config:
-        arbitrary_types_allowed = True
-        extra = "allow"
-        json_encoders: Dict[object, Callable] = {
-            Field: lambda v: int(dumps(v.value, default=str)),
-            ComplexFeastType: lambda v: str(v),
-            PrimitiveFeastType: lambda v: str(v),
-        }
 
     def to_feature_view(self) -> OnDemandFeatureView:
         source_request_sources = dict()
@@ -235,7 +230,7 @@ class OnDemandFeatureViewModel(BaseFeatureViewModel):
 
         return OnDemandFeatureView(
             name=self.name,
-            schema=self.features,
+            schema=[sch.to_field() for sch in self.features],
             sources=list(source_feature_view_projections.values())
             + list(source_request_sources.values()),
             udf=dill.loads(bytes.fromhex(self.udf)),
@@ -248,7 +243,7 @@ class OnDemandFeatureViewModel(BaseFeatureViewModel):
     @classmethod
     def from_feature_view(
         cls,
-        on_demand_feature_view,
+        on_demand_feature_view: OnDemandFeatureView,
     ) -> Self:  # type: ignore
         source_request_sources = dict()
         if on_demand_feature_view.source_request_sources:
@@ -274,7 +269,10 @@ class OnDemandFeatureViewModel(BaseFeatureViewModel):
 
         return cls(
             name=on_demand_feature_view.name,
-            features=on_demand_feature_view.features,
+            features=[
+                FieldModel.from_field(feature)
+                for feature in on_demand_feature_view.features
+            ],
             source_feature_view_projections=source_feature_view_projections,
             source_request_sources=source_request_sources,
             udf=dill.dumps(on_demand_feature_view.udf, recurse=True).hex(),

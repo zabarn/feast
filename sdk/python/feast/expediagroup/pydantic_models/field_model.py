@@ -32,7 +32,10 @@ class FieldModel(BaseModel):
         )
 
     @classmethod
-    def from_field(cls, field: Field) -> Self:
+    def from_field(
+        cls,
+        field: Field,
+    ) -> Self:  # type: ignore
         """
         Converts a Field object to its pydantic FieldModel representation.
 

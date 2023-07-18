@@ -15,7 +15,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Dict, Union
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel
 
 from feast.value_type import ValueType
 
