@@ -40,7 +40,7 @@ from feast.infra.offline_stores.contrib.spark_offline_store.spark_source import 
     SparkSource,
 )
 from feast.on_demand_feature_view import OnDemandFeatureView, on_demand_feature_view
-from feast.types import Array, Bool, Float32, Float64, Int64, String
+from feast.types import Array, Bool, Float32, Float64, Int64, PrimitiveFeastType, String
 from feast.value_type import ValueType
 
 
@@ -105,7 +105,14 @@ def test_datasource_child_deserialization():
     request_source_model_json = {
         "name": "source",
         "model_type": "RequestSourceModel",
-        "schema": [{"name": "string", "dtype": "Int32", "description": "", "tags": {}}],
+        "schema_": [
+            {
+                "name": "string",
+                "dtype": PrimitiveFeastType.INT64,
+                "description": "",
+                "tags": {},
+            }
+        ],
         "description": "desc",
         "tags": {},
         "owner": "feast",
@@ -140,8 +147,8 @@ def test_idempotent_entity_conversion():
     pydantic_json = pydantic_obj.json()
     assert pydantic_obj == EntityModel.parse_raw(pydantic_json)
 
-    pydantic_json = pydantic_obj.dict()
-    assert pydantic_obj == EntityModel.parse_obj(pydantic_json)
+    pydantic_dict = pydantic_obj.dict()
+    assert pydantic_obj == EntityModel.parse_obj(pydantic_dict)
 
 
 def test_idempotent_requestsource_conversion():
@@ -502,7 +509,7 @@ def test_idempotent_feature_service_conversion():
         name="feature_service_1",
         description="Helps to retrieve features from view1 and view2",
         owner="bdodla@expediagroup.com",
-        tags=[],
+        tags={},
         features=[view1, view2[["feature1"]]],
     )
     pydantic_obj = FeatureServiceModel.from_feature_service(python_obj)
