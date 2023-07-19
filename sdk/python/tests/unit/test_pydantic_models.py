@@ -134,6 +134,7 @@ def test_idempotent_entity_conversion():
     python_obj = Entity(
         name="my-entity",
         description="My entity",
+        value_type=ValueType.INT64,
         tags={"key1": "val1", "key2": "val2"},
     )
     pydantic_obj = EntityModel.from_entity(python_obj)
@@ -206,7 +207,9 @@ def test_idempotent_featureview_conversion():
         Field(name="f1", dtype=Float32),
         Field(name="f2", dtype=Bool),
     ]
-    user_entity = Entity(name="user1", join_keys=["user_id"])
+    user_entity = Entity(
+        name="user1", join_keys=["user_id"], value_type=ValueType.INT64
+    )
     request_source = RequestSource(
         name="source",
         schema=schema,
@@ -218,6 +221,7 @@ def test_idempotent_featureview_conversion():
         name="my-feature-view",
         entities=[user_entity],
         schema=[
+            Field(name="user1", dtype=Int64),
             Field(name="feature1", dtype=Float32),
             Field(name="feature2", dtype=Float32),
         ],
