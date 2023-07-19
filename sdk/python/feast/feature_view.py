@@ -436,7 +436,6 @@ class FeatureView(BaseFeatureView):
             Field.from_proto(field_proto)
             for field_proto in feature_view_proto.spec.features
         ]
-        feature_view.original_schema = feature_view.features
 
         feature_view.entity_columns = [
             Field.from_proto(field_proto)
@@ -447,6 +446,10 @@ class FeatureView(BaseFeatureView):
                 f"There are some mismatches in your feature view's registered entities. Please check if you have applied your entities correctly."
                 f"Entities: {feature_view.entities} vs Entity Columns: {feature_view.entity_columns}"
             )
+
+        feature_view.original_schema = (
+            feature_view.entity_columns + feature_view.features
+        )
 
         # FeatureViewProjections are not saved in the FeatureView proto.
         # Create the default projection.
