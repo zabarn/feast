@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import List
 
 import pandas as pd
@@ -248,6 +248,10 @@ def test_idempotent_featureview_conversion():
         ],
         source=spark_source,
     )
+    python_obj.materialization_intervals = [
+        (datetime.now() - timedelta(days=10), datetime.now() - timedelta(days=9)),
+        (datetime.now(), datetime.now()),
+    ]
     pydantic_obj = FeatureViewModel.from_feature_view(python_obj)
     converted_python_obj = pydantic_obj.to_feature_view()
     assert python_obj == converted_python_obj

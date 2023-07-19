@@ -5,8 +5,8 @@ Copyright 2023 Expedia Group
 Author: matcarlin@expediagroup.com
 """
 import sys
-from datetime import timedelta
-from typing import Dict, List, Optional
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Tuple
 
 import dill
 from pydantic import BaseModel
@@ -66,6 +66,7 @@ class FeatureViewModel(BaseFeatureViewModel):
     description: str
     tags: Optional[Dict[str, str]]
     owner: str
+    materialization_intervals: List[Tuple[datetime, datetime]] = []
 
     def to_feature_view(self) -> FeatureView:
         """
@@ -102,6 +103,7 @@ class FeatureViewModel(BaseFeatureViewModel):
             tags=self.tags if self.tags else None,
             owner=self.owner,
         )
+        feature_view.materialization_intervals = self.materialization_intervals
 
         return feature_view
 
@@ -157,6 +159,7 @@ class FeatureViewModel(BaseFeatureViewModel):
             description=feature_view.description,
             tags=feature_view.tags if feature_view.tags else None,
             owner=feature_view.owner,
+            materialization_intervals=feature_view.materialization_intervals,
         )
 
 
