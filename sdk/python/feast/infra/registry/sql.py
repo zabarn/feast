@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
 from threading import Lock
-from typing import Any, Callable, List, Optional, Set, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Union
 
 from pydantic import StrictStr
 from sqlalchemy import (  # type: ignore
@@ -1088,7 +1088,7 @@ class SqlRegistry(BaseRegistry):
         """
         Returns all projects metdata. No supporting function in SQL Registry so implemented this here instead of _get_all_projects.
         """
-        project_metadata_model_dict: dict[str, ProjectMetadataModel] = {}
+        project_metadata_model_dict: Dict[str, ProjectMetadataModel] = {}
         with self.engine.connect() as conn:
             stmt = select(feast_metadata)
             rows = conn.execute(stmt).all()
