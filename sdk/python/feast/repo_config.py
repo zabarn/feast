@@ -40,6 +40,7 @@ REGISTRY_CLASS_FOR_TYPE = {
     "file": "feast.infra.registry.registry.Registry",
     "sql": "feast.infra.registry.sql.SqlRegistry",
     "snowflake.registry": "feast.infra.registry.snowflake.SnowflakeRegistry",
+    "http": "feast.infra.registry.http.HttpRegistry",
 }
 
 BATCH_ENGINE_CLASS_FOR_TYPE = {
@@ -225,9 +226,9 @@ class RepoConfig(FeastBaseModel):
             self._batch_engine_config = "local"
 
         if isinstance(self.feature_server, Dict):
-            self.feature_server = get_feature_server_config_from_type(
-                self.feature_server["type"]
-            )(**self.feature_server)
+            self.feature_server = get_feature_server_config_from_type(self.feature_server["type"])(
+                **self.feature_server
+            )
 
         if self.entity_key_serialization_version <= 1:
             warnings.warn(
@@ -252,9 +253,7 @@ class RepoConfig(FeastBaseModel):
                     self._registry = RegistryConfig(**self._registry_config)
             elif isinstance(self._registry_config, str):
                 # User passed in just a path to file registry
-                self._registry = get_registry_config_from_type("file")(
-                    path=self._registry_config
-                )
+                self._registry = get_registry_config_from_type("file")(path=self._registry_config)
             elif self._registry_config:
                 self._registry = self._registry_config
         return self._registry
@@ -263,13 +262,11 @@ class RepoConfig(FeastBaseModel):
     def offline_store(self):
         if not self._offline_store:
             if isinstance(self._offline_config, Dict):
-                self._offline_store = get_offline_config_from_type(
-                    self._offline_config["type"]
-                )(**self._offline_config)
+                self._offline_store = get_offline_config_from_type(self._offline_config["type"])(
+                    **self._offline_config
+                )
             elif isinstance(self._offline_config, str):
-                self._offline_store = get_offline_config_from_type(
-                    self._offline_config
-                )()
+                self._offline_store = get_offline_config_from_type(self._offline_config)()
             elif self._offline_config:
                 self._offline_store = self._offline_config
         return self._offline_store
@@ -278,9 +275,9 @@ class RepoConfig(FeastBaseModel):
     def online_store(self):
         if not self._online_store:
             if isinstance(self._online_config, Dict):
-                self._online_store = get_online_config_from_type(
-                    self._online_config["type"]
-                )(**self._online_config)
+                self._online_store = get_online_config_from_type(self._online_config["type"])(
+                    **self._online_config
+                )
             elif isinstance(self._online_config, str):
                 self._online_store = get_online_config_from_type(self._online_config)()
             elif self._online_config:
@@ -296,9 +293,7 @@ class RepoConfig(FeastBaseModel):
                     self._batch_engine_config["type"]
                 )(**self._batch_engine_config)
             elif isinstance(self._batch_engine_config, str):
-                self._batch_engine = get_batch_engine_config_from_type(
-                    self._batch_engine_config
-                )()
+                self._batch_engine = get_batch_engine_config_from_type(self._batch_engine_config)()
             elif self._batch_engine_config:
                 self._batch_engine = self._batch_engine
 
@@ -319,9 +314,10 @@ class RepoConfig(FeastBaseModel):
 
         # Skip if we aren't creating the configuration from a dict or online store is null or it is a string like "None" or "null"
         if not isinstance(values["online_store"], Dict):
-            if isinstance(values["online_store"], str) and values[
-                "online_store"
-            ].lower() in {"none", "null"}:
+            if isinstance(values["online_store"], str) and values["online_store"].lower() in {
+                "none",
+                "null",
+            }:
                 values["online_store"] = None
             return values
 
@@ -415,9 +411,7 @@ class RepoConfig(FeastBaseModel):
 
         # Validate the dict to ensure one of the union types match
         try:
-            feature_server_config_class = get_feature_server_config_from_type(
-                defined_type
-            )
+            feature_server_config_class = get_feature_server_config_from_type(defined_type)
             feature_server_config_class(**values["feature_server"])
         except ValidationError as e:
             raise ValidationError(
@@ -477,9 +471,7 @@ class FeastConfigError(Exception):
         return f"{self._error_message}\nat {self._config_path}"
 
     def __repr__(self) -> str:
-        return (
-            f"FeastConfigError({repr(self._error_message)}, {repr(self._config_path)})"
-        )
+        return f"FeastConfigError({repr(self._error_message)}, {repr(self._config_path)})"
 
 
 def get_data_source_class_from_type(data_source_type: str):
