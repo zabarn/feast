@@ -1,4 +1,5 @@
-import csv, random, uuid
+import csv, random, uuid, os
+
 import pandas as pd
 from datetime import datetime, timezone
 
@@ -7,11 +8,11 @@ ts = datetime.now(timezone.utc)
 for i in range(1000):
     data.append({"rid": i+1, "name": uuid.uuid4(), "vec": [random.uniform(-50.0, 50.0) for _ in range(32)], "timestamp": ts})
 
-with open("/spike_testing/source/data.csv", "w") as csvfile:
+with open(f"{os.getcwd()}/data.csv", "w") as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=["rid", "name", "vec", "timestamp"])
     writer.writeheader()
     for row in data:
         writer.writerow(row)
 
-df = pd.read_csv("/spike_testing/source/data.csv", parse_dates=['timestamp'])
-df.to_parquet("/Users/tipike/opensource/feast/temp/source/data.parquet")
+df = pd.read_csv(f"{os.getcwd()}/data.csv", parse_dates=['timestamp'])
+df.to_parquet(f"{os.getcwd()}/data.parquet")
