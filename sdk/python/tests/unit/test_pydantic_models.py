@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import uuid
 from datetime import datetime, timedelta
 from typing import List
 
@@ -32,6 +33,9 @@ from feast.expediagroup.pydantic_models.feature_view_model import (
     OnDemandFeatureViewModel,
 )
 from feast.expediagroup.pydantic_models.field_model import FieldModel
+from feast.expediagroup.pydantic_models.project_metadata_model import (
+    ProjectMetadataModel,
+)
 from feast.feature_service import FeatureService
 from feast.feature_view import FeatureView
 from feast.feature_view_projection import FeatureViewProjection
@@ -40,6 +44,7 @@ from feast.infra.offline_stores.contrib.spark_offline_store.spark_source import 
     SparkSource,
 )
 from feast.on_demand_feature_view import OnDemandFeatureView, on_demand_feature_view
+from feast.project_metadata import ProjectMetadata
 from feast.types import Array, Bool, Float32, Float64, Int64, PrimitiveFeastType, String
 from feast.value_type import ValueType
 
@@ -533,3 +538,22 @@ def test_idempotent_feature_service_conversion():
 
     pydantic_json = pydantic_obj.dict()
     assert pydantic_obj == FeatureServiceModel.parse_obj(pydantic_json)
+
+
+def test_idempotent_project_metadata_conversion():
+    python_obj = ProjectMetadata(
+        project_name="test_project", project_uuid=f"{uuid.uuid4()}"
+    )
+    pydantic_obj = ProjectMetadataModel.from_project_metadata(python_obj)
+    converted_python_obj = pydantic_obj.to_project_metadata()
+    assert python_obj == converted_python_obj
+
+    feast_proto = converted_python_obj.to_proto()
+    python_obj_from_proto = ProjectMetadata.from_proto(feast_proto)
+    assert python_obj == python_obj_from_proto
+
+    pydantic_json = pydantic_obj.json(exclude={"last_updated_timestamp"})
+    assert pydantic_obj == ProjectMetadataModel.parse_raw(pydantic_json)
+
+    pydantic_json = pydantic_obj.dict(exclude={"last_updated_timestamp"})
+    assert pydantic_obj == ProjectMetadataModel.parse_obj(pydantic_json)

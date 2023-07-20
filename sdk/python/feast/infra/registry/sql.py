@@ -1085,6 +1085,9 @@ class SqlRegistry(BaseRegistry):
         return projects
 
     def get_all_project_metadata(self) -> List[ProjectMetadataModel]:
+        """
+        Returns all projects metdata. No supporting function in SQL Registry so implemented this here instead of _get_all_projects.
+        """
         project_metadata_model_dict: dict[str, ProjectMetadataModel] = {}
         with self.engine.connect() as conn:
             stmt = select(feast_metadata)
@@ -1111,6 +1114,9 @@ class SqlRegistry(BaseRegistry):
         return list(project_metadata_model_dict.values())
 
     def get_project_metadata(self, project: str) -> ProjectMetadataModel:
+        """
+        Returns given project metdata. No supporting function in SQL Registry so implemented this here rather than using _get_last_updated_metadata and list_project_metadata.
+        """
         project_metadata_model: ProjectMetadataModel = ProjectMetadataModel(
             project_name=project
         )
