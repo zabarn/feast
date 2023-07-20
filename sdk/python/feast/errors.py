@@ -67,7 +67,7 @@ class OnDemandFeatureViewNotFoundException(FeastObjectNotFoundException):
 
 
 class ProjectMetadataNotFoundException(FeastObjectNotFoundException):
-    def __init__(self, project=None):
+    def __init__(self, project: str = None):
         super().__init__(f"Project Metadata does not exist in project {project}")
 
 
