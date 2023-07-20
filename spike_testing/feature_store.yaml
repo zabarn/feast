@@ -1,0 +1,7 @@
+project: vector_test
+registry: data/registry.db
+provider: local
+online_store:
+  type: vector
+  path: data/online_store.db
+entity_key_serialization_version: 2
