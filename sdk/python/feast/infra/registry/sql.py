@@ -34,6 +34,9 @@ from feast.errors import (
     SavedDatasetNotFound,
     ValidationReferenceNotFound,
 )
+from feast.expediagroup.pydantic_models.project_metadata_model import (
+    ProjectMetadataModel,
+)
 from feast.feature_service import FeatureService
 from feast.feature_view import FeatureView
 from feast.infra.infra_object import Infra
@@ -1080,3 +1083,50 @@ class SqlRegistry(BaseRegistry):
                     projects.add(row["project_id"])
 
         return projects
+
+    def get_all_project_metadata(self) -> List[ProjectMetadataModel]:
+        project_metadata_model_dict: dict[str, ProjectMetadataModel] = {}
+        with self.engine.connect() as conn:
+            stmt = select(feast_metadata)
+            rows = conn.execute(stmt).all()
+            if rows:
+                for row in rows:
+                    project_id = row["project_id"]
+                    metadata_key = row["metadata_key"]
+                    metadata_value = row["metadata_value"]
+
+                    if project_id not in project_metadata_model_dict:
+                        project_metadata_model_dict[project_id] = ProjectMetadataModel(
+                            project_name=project_id
+                        )
+
+                    project_metadata_model: ProjectMetadataModel = (
+                        project_metadata_model_dict[project_id]
+                    )
+                    if metadata_key == FeastMetadataKeys.PROJECT_UUID.value:
+                        project_metadata_model.project_uuid = metadata_value
+
+                    if metadata_key == FeastMetadataKeys.LAST_UPDATED_TIMESTAMP.value:
+                        project_metadata_model.last_updated_timestamp = metadata_value
+        return list(project_metadata_model_dict.values())
+
+    def get_project_metadata(self, project: str) -> ProjectMetadataModel:
+        project_metadata_model: ProjectMetadataModel = ProjectMetadataModel(
+            project_name=project
+        )
+        with self.engine.connect() as conn:
+            stmt = select(feast_metadata).where(
+                feast_metadata.c.project_id == project,
+            )
+            rows = conn.execute(stmt).all()
+            if rows:
+                for row in rows:
+                    metadata_key = row["metadata_key"]
+                    metadata_value = row["metadata_value"]
+
+                    if metadata_key == FeastMetadataKeys.PROJECT_UUID.value:
+                        project_metadata_model.project_uuid = metadata_value
+
+                    if metadata_key == FeastMetadataKeys.LAST_UPDATED_TIMESTAMP.value:
+                        project_metadata_model.last_updated_timestamp = metadata_value
+        return project_metadata_model
