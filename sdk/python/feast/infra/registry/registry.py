@@ -94,7 +94,9 @@ class FeastObjectType(Enum):
             FeastObjectType.STREAM_FEATURE_VIEW: registry.list_stream_feature_views(
                 project=project,
             ),
-            FeastObjectType.FEATURE_SERVICE: registry.list_feature_services(project=project),
+            FeastObjectType.FEATURE_SERVICE: registry.list_feature_services(
+                project=project
+            ),
         }
 
     @staticmethod
@@ -148,7 +150,9 @@ class Registry(BaseRegistry):
     ):
         pass
 
-    def get_user_metadata(self, project: str, feature_view: BaseFeatureView) -> Optional[bytes]:
+    def get_user_metadata(
+        self, project: str, feature_view: BaseFeatureView
+    ) -> Optional[bytes]:
         pass
 
     # The cached_registry_proto object is used for both reads and writes. In particular,
@@ -244,7 +248,9 @@ class Registry(BaseRegistry):
             self.commit()
 
     def get_infra(self, project: str, allow_cache: bool = False) -> Infra:
-        registry_proto = self._get_registry_proto(project=project, allow_cache=allow_cache)
+        registry_proto = self._get_registry_proto(
+            project=project, allow_cache=allow_cache
+        )
         return Infra.from_proto(registry_proto.infra)
 
     def apply_entity(self, entity: Entity, project: str, commit: bool = True):
@@ -260,7 +266,9 @@ class Registry(BaseRegistry):
         self._prepare_registry_for_changes(project)
         assert self.cached_registry_proto
 
-        for idx, existing_entity_proto in enumerate(self.cached_registry_proto.entities):
+        for idx, existing_entity_proto in enumerate(
+            self.cached_registry_proto.entities
+        ):
             if (
                 existing_entity_proto.spec.name == entity_proto.spec.name
                 and existing_entity_proto.spec.project == project
@@ -273,14 +281,22 @@ class Registry(BaseRegistry):
             self.commit()
 
     def list_entities(self, project: str, allow_cache: bool = False) -> List[Entity]:
-        registry_proto = self._get_registry_proto(project=project, allow_cache=allow_cache)
+        registry_proto = self._get_registry_proto(
+            project=project, allow_cache=allow_cache
+        )
         return proto_registry_utils.list_entities(registry_proto, project)
 
-    def list_data_sources(self, project: str, allow_cache: bool = False) -> List[DataSource]:
-        registry_proto = self._get_registry_proto(project=project, allow_cache=allow_cache)
+    def list_data_sources(
+        self, project: str, allow_cache: bool = False
+    ) -> List[DataSource]:
+        registry_proto = self._get_registry_proto(
+            project=project, allow_cache=allow_cache
+        )
         return proto_registry_utils.list_data_sources(registry_proto, project)
 
-    def apply_data_source(self, data_source: DataSource, project: str, commit: bool = True):
+    def apply_data_source(
+        self, data_source: DataSource, project: str, commit: bool = True
+    ):
         registry = self._prepare_registry_for_changes(project)
         for idx, existing_data_source_proto in enumerate(registry.data_sources):
             if existing_data_source_proto.name == data_source.name:
@@ -301,7 +317,9 @@ class Registry(BaseRegistry):
         self._prepare_registry_for_changes(project)
         assert self.cached_registry_proto
 
-        for idx, data_source_proto in enumerate(self.cached_registry_proto.data_sources):
+        for idx, data_source_proto in enumerate(
+            self.cached_registry_proto.data_sources
+        ):
             if data_source_proto.name == name:
                 del self.cached_registry_proto.data_sources[idx]
                 if commit:
@@ -324,7 +342,8 @@ class Registry(BaseRegistry):
 
         for idx, existing_feature_service_proto in enumerate(registry.feature_services):
             if (
-                existing_feature_service_proto.spec.name == feature_service_proto.spec.name
+                existing_feature_service_proto.spec.name
+                == feature_service_proto.spec.name
                 and existing_feature_service_proto.spec.project == project
             ):
                 del registry.feature_services[idx]
@@ -335,20 +354,28 @@ class Registry(BaseRegistry):
     def list_feature_services(
         self, project: str, allow_cache: bool = False
     ) -> List[FeatureService]:
-        registry_proto = self._get_registry_proto(project=project, allow_cache=allow_cache)
+        registry_proto = self._get_registry_proto(
+            project=project, allow_cache=allow_cache
+        )
         return proto_registry_utils.list_feature_services(registry_proto, project)
 
     def get_feature_service(
         self, name: str, project: str, allow_cache: bool = False
     ) -> FeatureService:
-        registry_proto = self._get_registry_proto(project=project, allow_cache=allow_cache)
+        registry_proto = self._get_registry_proto(
+            project=project, allow_cache=allow_cache
+        )
         return proto_registry_utils.get_feature_service(registry_proto, name, project)
 
     def get_entity(self, name: str, project: str, allow_cache: bool = False) -> Entity:
-        registry_proto = self._get_registry_proto(project=project, allow_cache=allow_cache)
+        registry_proto = self._get_registry_proto(
+            project=project, allow_cache=allow_cache
+        )
         return proto_registry_utils.get_entity(registry_proto, name, project)
 
-    def apply_feature_view(self, feature_view: BaseFeatureView, project: str, commit: bool = True):
+    def apply_feature_view(
+        self, feature_view: BaseFeatureView, project: str, commit: bool = True
+    ):
         feature_view.ensure_valid()
 
         now = datetime.utcnow()
@@ -364,24 +391,35 @@ class Registry(BaseRegistry):
         self._check_conflicting_feature_view_names(feature_view)
         existing_feature_views_of_same_type: RepeatedCompositeFieldContainer
         if isinstance(feature_view, StreamFeatureView):
-            existing_feature_views_of_same_type = self.cached_registry_proto.stream_feature_views
+            existing_feature_views_of_same_type = (
+                self.cached_registry_proto.stream_feature_views
+            )
         elif isinstance(feature_view, FeatureView):
-            existing_feature_views_of_same_type = self.cached_registry_proto.feature_views
+            existing_feature_views_of_same_type = (
+                self.cached_registry_proto.feature_views
+            )
         elif isinstance(feature_view, OnDemandFeatureView):
             existing_feature_views_of_same_type = (
                 self.cached_registry_proto.on_demand_feature_views
             )
         elif isinstance(feature_view, RequestFeatureView):
-            existing_feature_views_of_same_type = self.cached_registry_proto.request_feature_views
+            existing_feature_views_of_same_type = (
+                self.cached_registry_proto.request_feature_views
+            )
         else:
             raise ValueError(f"Unexpected feature view type: {type(feature_view)}")
 
-        for idx, existing_feature_view_proto in enumerate(existing_feature_views_of_same_type):
+        for idx, existing_feature_view_proto in enumerate(
+            existing_feature_views_of_same_type
+        ):
             if (
                 existing_feature_view_proto.spec.name == feature_view_proto.spec.name
                 and existing_feature_view_proto.spec.project == project
             ):
-                if feature_view.__class__.from_proto(existing_feature_view_proto) == feature_view:
+                if (
+                    feature_view.__class__.from_proto(existing_feature_view_proto)
+                    == feature_view
+                ):
                     return
                 else:
                     del existing_feature_views_of_same_type[idx]
@@ -394,23 +432,37 @@ class Registry(BaseRegistry):
     def list_stream_feature_views(
         self, project: str, allow_cache: bool = False
     ) -> List[StreamFeatureView]:
-        registry_proto = self._get_registry_proto(project=project, allow_cache=allow_cache)
+        registry_proto = self._get_registry_proto(
+            project=project, allow_cache=allow_cache
+        )
         return proto_registry_utils.list_stream_feature_views(registry_proto, project)
 
     def list_on_demand_feature_views(
         self, project: str, allow_cache: bool = False
     ) -> List[OnDemandFeatureView]:
-        registry_proto = self._get_registry_proto(project=project, allow_cache=allow_cache)
-        return proto_registry_utils.list_on_demand_feature_views(registry_proto, project)
+        registry_proto = self._get_registry_proto(
+            project=project, allow_cache=allow_cache
+        )
+        return proto_registry_utils.list_on_demand_feature_views(
+            registry_proto, project
+        )
 
     def get_on_demand_feature_view(
         self, name: str, project: str, allow_cache: bool = False
     ) -> OnDemandFeatureView:
-        registry_proto = self._get_registry_proto(project=project, allow_cache=allow_cache)
-        return proto_registry_utils.get_on_demand_feature_view(registry_proto, name, project)
+        registry_proto = self._get_registry_proto(
+            project=project, allow_cache=allow_cache
+        )
+        return proto_registry_utils.get_on_demand_feature_view(
+            registry_proto, name, project
+        )
 
-    def get_data_source(self, name: str, project: str, allow_cache: bool = False) -> DataSource:
-        registry_proto = self._get_registry_proto(project=project, allow_cache=allow_cache)
+    def get_data_source(
+        self, name: str, project: str, allow_cache: bool = False
+    ) -> DataSource:
+        registry_proto = self._get_registry_proto(
+            project=project, allow_cache=allow_cache
+        )
         return proto_registry_utils.get_data_source(registry_proto, name, project)
 
     def apply_materialization(
@@ -431,8 +483,12 @@ class Registry(BaseRegistry):
                 existing_feature_view_proto.spec.name == feature_view.name
                 and existing_feature_view_proto.spec.project == project
             ):
-                existing_feature_view = FeatureView.from_proto(existing_feature_view_proto)
-                existing_feature_view.materialization_intervals.append((start_date, end_date))
+                existing_feature_view = FeatureView.from_proto(
+                    existing_feature_view_proto
+                )
+                existing_feature_view.materialization_intervals.append(
+                    (start_date, end_date)
+                )
                 existing_feature_view.last_updated_timestamp = datetime.utcnow()
                 feature_view_proto = existing_feature_view.to_proto()
                 feature_view_proto.spec.project = project
@@ -459,42 +515,62 @@ class Registry(BaseRegistry):
                 stream_feature_view_proto = existing_stream_feature_view.to_proto()
                 stream_feature_view_proto.spec.project = project
                 del self.cached_registry_proto.stream_feature_views[idx]
-                self.cached_registry_proto.stream_feature_views.append(stream_feature_view_proto)
+                self.cached_registry_proto.stream_feature_views.append(
+                    stream_feature_view_proto
+                )
                 if commit:
                     self.commit()
                 return
 
         raise FeatureViewNotFoundException(feature_view.name, project)
 
-    def list_feature_views(self, project: str, allow_cache: bool = False) -> List[FeatureView]:
-        registry_proto = self._get_registry_proto(project=project, allow_cache=allow_cache)
+    def list_feature_views(
+        self, project: str, allow_cache: bool = False
+    ) -> List[FeatureView]:
+        registry_proto = self._get_registry_proto(
+            project=project, allow_cache=allow_cache
+        )
         return proto_registry_utils.list_feature_views(registry_proto, project)
 
     def get_request_feature_view(self, name: str, project: str):
         registry_proto = self._get_registry_proto(project=project, allow_cache=False)
-        return proto_registry_utils.get_request_feature_view(registry_proto, name, project)
+        return proto_registry_utils.get_request_feature_view(
+            registry_proto, name, project
+        )
 
     def list_request_feature_views(
         self, project: str, allow_cache: bool = False
     ) -> List[RequestFeatureView]:
-        registry_proto = self._get_registry_proto(project=project, allow_cache=allow_cache)
+        registry_proto = self._get_registry_proto(
+            project=project, allow_cache=allow_cache
+        )
         return proto_registry_utils.list_request_feature_views(registry_proto, project)
 
-    def get_feature_view(self, name: str, project: str, allow_cache: bool = False) -> FeatureView:
-        registry_proto = self._get_registry_proto(project=project, allow_cache=allow_cache)
+    def get_feature_view(
+        self, name: str, project: str, allow_cache: bool = False
+    ) -> FeatureView:
+        registry_proto = self._get_registry_proto(
+            project=project, allow_cache=allow_cache
+        )
         return proto_registry_utils.get_feature_view(registry_proto, name, project)
 
     def get_stream_feature_view(
         self, name: str, project: str, allow_cache: bool = False
     ) -> StreamFeatureView:
-        registry_proto = self._get_registry_proto(project=project, allow_cache=allow_cache)
-        return proto_registry_utils.get_stream_feature_view(registry_proto, name, project)
+        registry_proto = self._get_registry_proto(
+            project=project, allow_cache=allow_cache
+        )
+        return proto_registry_utils.get_stream_feature_view(
+            registry_proto, name, project
+        )
 
     def delete_feature_service(self, name: str, project: str, commit: bool = True):
         self._prepare_registry_for_changes(project)
         assert self.cached_registry_proto
 
-        for idx, feature_service_proto in enumerate(self.cached_registry_proto.feature_services):
+        for idx, feature_service_proto in enumerate(
+            self.cached_registry_proto.feature_services
+        ):
             if (
                 feature_service_proto.spec.name == name
                 and feature_service_proto.spec.project == project
@@ -563,7 +639,9 @@ class Registry(BaseRegistry):
         self._prepare_registry_for_changes(project)
         assert self.cached_registry_proto
 
-        for idx, existing_entity_proto in enumerate(self.cached_registry_proto.entities):
+        for idx, existing_entity_proto in enumerate(
+            self.cached_registry_proto.entities
+        ):
             if (
                 existing_entity_proto.spec.name == name
                 and existing_entity_proto.spec.project == project
@@ -608,11 +686,17 @@ class Registry(BaseRegistry):
     def get_saved_dataset(
         self, name: str, project: str, allow_cache: bool = False
     ) -> SavedDataset:
-        registry_proto = self._get_registry_proto(project=project, allow_cache=allow_cache)
+        registry_proto = self._get_registry_proto(
+            project=project, allow_cache=allow_cache
+        )
         return proto_registry_utils.get_saved_dataset(registry_proto, name, project)
 
-    def list_saved_datasets(self, project: str, allow_cache: bool = False) -> List[SavedDataset]:
-        registry_proto = self._get_registry_proto(project=project, allow_cache=allow_cache)
+    def list_saved_datasets(
+        self, project: str, allow_cache: bool = False
+    ) -> List[SavedDataset]:
+        registry_proto = self._get_registry_proto(
+            project=project, allow_cache=allow_cache
+        )
         return proto_registry_utils.list_saved_datasets(registry_proto, project)
 
     def apply_validation_reference(
@@ -625,7 +709,9 @@ class Registry(BaseRegistry):
         validation_reference_proto.project = project
 
         registry_proto = self._prepare_registry_for_changes(project)
-        for idx, existing_validation_reference in enumerate(registry_proto.validation_references):
+        for idx, existing_validation_reference in enumerate(
+            registry_proto.validation_references
+        ):
             if (
                 existing_validation_reference.name == validation_reference_proto.name
                 and existing_validation_reference.project == project
@@ -640,18 +726,26 @@ class Registry(BaseRegistry):
     def get_validation_reference(
         self, name: str, project: str, allow_cache: bool = False
     ) -> ValidationReference:
-        registry_proto = self._get_registry_proto(project=project, allow_cache=allow_cache)
-        return proto_registry_utils.get_validation_reference(registry_proto, name, project)
+        registry_proto = self._get_registry_proto(
+            project=project, allow_cache=allow_cache
+        )
+        return proto_registry_utils.get_validation_reference(
+            registry_proto, name, project
+        )
 
     def list_validation_references(
         self, project: str, allow_cache: bool = False
     ) -> List[ValidationReference]:
-        registry_proto = self._get_registry_proto(project=project, allow_cache=allow_cache)
+        registry_proto = self._get_registry_proto(
+            project=project, allow_cache=allow_cache
+        )
         return proto_registry_utils.list_validation_references(registry_proto, project)
 
     def delete_validation_reference(self, name: str, project: str, commit: bool = True):
         registry_proto = self._prepare_registry_for_changes(project)
-        for idx, existing_validation_reference in enumerate(registry_proto.validation_references):
+        for idx, existing_validation_reference in enumerate(
+            registry_proto.validation_references
+        ):
             if (
                 existing_validation_reference.name == name
                 and existing_validation_reference.project == project
@@ -665,7 +759,9 @@ class Registry(BaseRegistry):
     def list_project_metadata(
         self, project: str, allow_cache: bool = False
     ) -> List[ProjectMetadata]:
-        registry_proto = self._get_registry_proto(project=project, allow_cache=allow_cache)
+        registry_proto = self._get_registry_proto(
+            project=project, allow_cache=allow_cache
+        )
         return proto_registry_utils.list_project_metadata(registry_proto, project)
 
     def commit(self):
@@ -689,7 +785,9 @@ class Registry(BaseRegistry):
         try:
             self._get_registry_proto(project=project, allow_cache=True)
             if (
-                proto_registry_utils.get_project_metadata(self.cached_registry_proto, project)
+                proto_registry_utils.get_project_metadata(
+                    self.cached_registry_proto, project
+                )
                 is None
             ):
                 # Project metadata not initialized yet. Try pulling without cache
@@ -702,8 +800,15 @@ class Registry(BaseRegistry):
 
         # Initialize project metadata if needed
         assert self.cached_registry_proto
-        if proto_registry_utils.get_project_metadata(self.cached_registry_proto, project) is None:
-            proto_registry_utils.init_project_metadata(self.cached_registry_proto, project)
+        if (
+            proto_registry_utils.get_project_metadata(
+                self.cached_registry_proto, project
+            )
+            is None
+        ):
+            proto_registry_utils.init_project_metadata(
+                self.cached_registry_proto, project
+            )
             self.commit()
 
         return self.cached_registry_proto
@@ -721,12 +826,17 @@ class Registry(BaseRegistry):
         """
         with self._refresh_lock:
             expired = (
-                self.cached_registry_proto is None or self.cached_registry_proto_created is None
+                self.cached_registry_proto is None
+                or self.cached_registry_proto_created is None
             ) or (
-                self.cached_registry_proto_ttl.total_seconds() > 0  # 0 ttl means infinity
+                self.cached_registry_proto_ttl.total_seconds()
+                > 0  # 0 ttl means infinity
                 and (
                     datetime.utcnow()
-                    > (self.cached_registry_proto_created + self.cached_registry_proto_ttl)
+                    > (
+                        self.cached_registry_proto_created
+                        + self.cached_registry_proto_ttl
+                    )
                 )
             )
 
@@ -764,13 +874,22 @@ class Registry(BaseRegistry):
     def _check_conflicting_feature_view_names(self, feature_view: BaseFeatureView):
         name_to_fv_protos = self._existing_feature_view_names_to_fvs()
         if feature_view.name in name_to_fv_protos:
-            if not isinstance(name_to_fv_protos.get(feature_view.name), feature_view.proto_class):
+            if not isinstance(
+                name_to_fv_protos.get(feature_view.name), feature_view.proto_class
+            ):
                 raise ConflictingFeatureViewNames(feature_view.name)
 
     def _existing_feature_view_names_to_fvs(self) -> Dict[str, Message]:
         assert self.cached_registry_proto
-        odfvs = {fv.spec.name: fv for fv in self.cached_registry_proto.on_demand_feature_views}
+        odfvs = {
+            fv.spec.name: fv
+            for fv in self.cached_registry_proto.on_demand_feature_views
+        }
         fvs = {fv.spec.name: fv for fv in self.cached_registry_proto.feature_views}
-        request_fvs = {fv.spec.name: fv for fv in self.cached_registry_proto.request_feature_views}
-        sfv = {fv.spec.name: fv for fv in self.cached_registry_proto.stream_feature_views}
+        request_fvs = {
+            fv.spec.name: fv for fv in self.cached_registry_proto.request_feature_views
+        }
+        sfv = {
+            fv.spec.name: fv for fv in self.cached_registry_proto.stream_feature_views
+        }
         return {**odfvs, **fvs, **request_fvs, **sfv}

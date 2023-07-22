@@ -7,17 +7,10 @@ from typing import Any, List, Optional, Set, Union
 import httpx
 from pydantic import StrictStr
 
-from feast import (
-    Entity,
-    FeatureService,
-    FeatureView,
-    OnDemandFeatureView,
-    RequestFeatureView,
-    StreamFeatureView,
-    usage,
-)
+from feast import usage
 from feast.base_feature_view import BaseFeatureView
 from feast.data_source import DataSource, RequestSource
+from feast.entity import Entity
 from feast.errors import (
     DataSourceObjectNotFoundException,
     EntityNotFoundException,
@@ -38,16 +31,21 @@ from feast.expediagroup.pydantic_models.feature_view_model import (
 from feast.expediagroup.pydantic_models.project_metadata_model import (
     ProjectMetadataModel,
 )
+from feast.feature_service import FeatureService
+from feast.feature_view import FeatureView
 from feast.infra.infra_object import Infra
 from feast.infra.offline_stores.contrib.spark_offline_store.spark_source import (
     SparkSource,
 )
 from feast.infra.registry import proto_registry_utils
 from feast.infra.registry.base_registry import BaseRegistry
+from feast.on_demand_feature_view import OnDemandFeatureView
 from feast.project_metadata import ProjectMetadata
 from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
 from feast.repo_config import RegistryConfig
+from feast.request_feature_view import RequestFeatureView
 from feast.saved_dataset import SavedDataset, ValidationReference
+from feast.stream_feature_view import StreamFeatureView
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +89,7 @@ class HttpRegistry(BaseRegistry):
 
     def _handle_exception(self, exception: Exception):
         logger.exception("Request failed with exception: %s", str(exception))
-        raise httpx.HTTPError(f"Request failed with exception: {str(exception)}")
+        raise httpx.HTTPError("Request failed with exception: " + str(exception))
 
     def _send_request(self, method: str, url: str, params=None, data=None):
         try:
@@ -132,7 +130,7 @@ class HttpRegistry(BaseRegistry):
         self,
         name: str,
         project: str,
-        allow_cache: bool = True,
+        allow_cache: bool = False,
     ) -> Entity:
         if allow_cache:
             self._refresh_cached_registry_if_necessary()
@@ -150,7 +148,7 @@ class HttpRegistry(BaseRegistry):
         except Exception as exception:
             self._handle_exception(exception)
 
-    def list_entities(self, project: str, allow_cache: bool = True) -> List[Entity]:  # type: ignore[return]
+    def list_entities(self, project: str, allow_cache: bool = False) -> List[Entity]:  # type: ignore[return]
         if allow_cache:
             self._refresh_cached_registry_if_necessary()
             return proto_registry_utils.list_entities(self.cached_registry_proto, project)
@@ -434,7 +432,8 @@ class HttpRegistry(BaseRegistry):
     def list_stream_feature_views(
         self, project: str, allow_cache: bool = False
     ) -> List[StreamFeatureView]:
-        pass
+        # TODO: Implement listing Stream Feature Views
+        return []
 
     def get_request_feature_view(self, name: str, project: str) -> RequestFeatureView:
         raise NotImplementedError("Method not implemented")
@@ -442,7 +441,8 @@ class HttpRegistry(BaseRegistry):
     def list_request_feature_views(
         self, project: str, allow_cache: bool = False
     ) -> List[RequestFeatureView]:
-        pass
+        # TODO: Implement listing Request Feature Views
+        return []
 
     def apply_materialization(
         self,
@@ -498,7 +498,8 @@ class HttpRegistry(BaseRegistry):
         raise NotImplementedError("Method not implemented")
 
     def get_infra(self, project: str, allow_cache: bool = False) -> Infra:
-        raise NotImplementedError("Method not implemented")
+        # TODO: Need to implement this when necessary
+        return Infra()
 
     def apply_user_metadata(
         self,
@@ -597,7 +598,7 @@ class HttpRegistry(BaseRegistry):
         try:
             url = f"{self.base_url}/projects/{project}"
             response_data = self._send_request("GET", url)
-            return response_data["last_updated_timestamp"]
+            return datetime.strptime(response_data["last_updated_timestamp"], "%Y-%m-%dT%H:%M:%S")
         except Exception as exception:
             self._handle_exception(exception)
 
