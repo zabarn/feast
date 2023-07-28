@@ -8,7 +8,7 @@ RUN apt update && \
         build-essential
 
 RUN pip install pip --upgrade
-RUN pip install "feast[aws,gcp,snowflake,redis,go,mysql,postgres]"
+RUN pip install "eg-feast[aws,redis,go]"
 
 
 RUN apt update
