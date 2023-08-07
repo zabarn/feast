@@ -755,7 +755,7 @@ def execute_athena_query_async(
         # return athena_data_client.execute_statement(
         return athena_data_client.start_query_execution(
             QueryString=query,
-            QueryExecutionContext={"Database": database, "Catalog": data_source},
+            QueryExecutionContext={"Database": database},
             WorkGroup=workgroup,
         )
 

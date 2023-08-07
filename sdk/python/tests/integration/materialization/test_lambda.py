@@ -21,7 +21,6 @@ from tests.utils.e2e_test_validation import validate_offline_online_store_consis
 
 
 @pytest.mark.integration
-@pytest.mark.skip(reason="Very flaky test")
 def test_lambda_materialization_consistency():
     lambda_config = IntegrationTestRepoConfig(
         provider="aws",
@@ -65,6 +64,7 @@ def test_lambda_materialization_consistency():
     )
 
     try:
+
         fs.apply([driver, driver_stats_fv])
 
         print(df)
