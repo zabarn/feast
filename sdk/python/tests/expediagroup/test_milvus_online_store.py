@@ -71,36 +71,6 @@ class TestMilvusOnlineStore:
         utility.drop_collection(self.collection_to_delete)
         utility.drop_collection(self.collection_to_write)
 
-    def test_milvus_start_stop(self):
-        # this is just an example how to start / stop Milvus. Once a real test is implemented this test can be deleted
-        online_store_creator = MilvusOnlineStoreCreator("milvus")
-        online_store_creator.create_online_store()
-
-        # access through a stub
-        milvus = Milvus(online_store_creator.host, 19530)
-
-        ok = milvus.has_collection(self.collection_to_write)
-        if not ok:
-            fields = {
-                "fields": [
-                    {"name": "key", "type": DataType.INT64, "is_primary": True},
-                    {
-                        "name": "vector",
-                        "type": DataType.FLOAT_VECTOR,
-                        "params": {"dim": 32},
-                    },
-                ],
-                "auto_id": True,
-            }
-
-            milvus.create_collection(self.collection_to_write, fields)
-
-        collection = milvus.describe_collection(self.collection_to_write)
-        assert collection.get("collection_name") == self.collection_to_write
-        # Cleaning up
-        utility.drop_collection(self.collection_to_write)
-        online_store_creator.teardown()
-
     def test_milvus_update_add_collection(
         self, caplog, milvus_online_setup, repo_config
     ):
