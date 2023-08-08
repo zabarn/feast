@@ -31,13 +31,13 @@ class MockFeatureView:
     schema: Optional[List[Field]]
 
 
-@pytest.fixture
+@pytest.fixture(scope="class")
 def repo_config():
     return RepoConfig(
         registry=REGISTRY,
         project=PROJECT,
         provider=PROVIDER,
-        online_store=MilvusOnlineStoreConfig(host=HOST, region=REGION),
+        online_store=MilvusOnlineStoreConfig(host=HOST),
         offline_store=FileOfflineStoreConfig(),
         entity_key_serialization_version=2,
     )
@@ -61,6 +61,16 @@ def milvus_online_setup():
 
 
 class TestMilvusOnlineStore:
+
+    collection_to_write = "Collection2"
+    collection_to_delete = "Collection1"
+
+    def setup_method(self, milvus_online_setup):
+        # Ensuring that the collections created are dropped before the tests are run
+        MilvusOnlineStoreConfig(host=HOST)
+        utility.drop_collection(self.collection_to_delete)
+        utility.drop_collection(self.collection_to_write)
+
     def test_milvus_start_stop(self):
         # this is just an example how to start / stop Milvus. Once a real test is implemented this test can be deleted
         online_store_creator = MilvusOnlineStoreCreator("milvus")
@@ -69,10 +79,7 @@ class TestMilvusOnlineStore:
         # access through a stub
         milvus = Milvus(online_store_creator.host, 19530)
 
-        # Create collection demo_collection if it doesn't exist.
-        collection_name = "example_collection_"
-
-        ok = milvus.has_collection(collection_name)
+        ok = milvus.has_collection(self.collection_to_write)
         if not ok:
             fields = {
                 "fields": [
@@ -86,16 +93,18 @@ class TestMilvusOnlineStore:
                 "auto_id": True,
             }
 
-            milvus.create_collection(collection_name, fields)
+            milvus.create_collection(self.collection_to_write, fields)
 
-        collection = milvus.describe_collection(collection_name)
-        assert collection.get("collection_name") == collection_name
+        collection = milvus.describe_collection(self.collection_to_write)
+        assert collection.get("collection_name") == self.collection_to_write
+        # Cleaning up
+        utility.drop_collection(self.collection_to_write)
         online_store_creator.teardown()
 
-    def test_milvus_update(self, milvus_online_setup):
+    def test_milvus_update_add_collection(
+        self, caplog, milvus_online_setup, repo_config
+    ):
 
-        collection_to_delete = "Collection1"
-        collection_to_write = "Collection2"
         MilvusOnlineStoreConfig(host=HOST)
 
         # Creating a common schema for collection
@@ -110,30 +119,166 @@ class TestMilvusOnlineStore:
             ]
         )
 
-        # Ensuring no collections exist at the start of the test
-        utility.drop_collection(collection_to_delete)
-        utility.drop_collection(collection_to_write)
+        MilvusOnlineStore().update(
+            config=repo_config,
+            tables_to_delete=[],
+            tables_to_keep=[
+                MockFeatureView(name=self.collection_to_write, schema=schema)
+            ],
+            entities_to_delete=None,
+            entities_to_keep=None,
+            partial=None,
+        )
+        assert len(utility.list_collections()) == 1
+        assert utility.has_collection(self.collection_to_write) is True
+        assert (
+            f"Collection {self.collection_to_write} has been created successfully."
+            in caplog.text
+        )
+
+        # Cleaning up
+        utility.drop_collection(self.collection_to_write)
+
+    def test_milvus_update_add_existing_collection(self, caplog, milvus_online_setup):
+
+        MilvusOnlineStoreConfig(host=HOST)
+
+        # Creating a common schema for collection
+        schema = CollectionSchema(
+            fields=[
+                FieldSchema(
+                    "int64", DataType.INT64, description="int64", is_primary=True
+                ),
+                FieldSchema(
+                    "float_vector", DataType.FLOAT_VECTOR, is_primary=False, dim=128
+                ),
+            ]
+        )
 
         MilvusOnlineStore().update(
             config=repo_config,
             tables_to_delete=[],
-            tables_to_keep=[MockFeatureView(name=collection_to_delete, schema=schema)],
+            tables_to_keep=[
+                MockFeatureView(name=self.collection_to_write, schema=schema)
+            ],
             entities_to_delete=None,
             entities_to_keep=None,
             partial=None,
         )
-
         assert len(utility.list_collections()) == 1
 
         MilvusOnlineStore().update(
             config=repo_config,
-            tables_to_delete=[MockFeatureView(name=collection_to_delete, schema=None)],
-            tables_to_keep=[MockFeatureView(name=collection_to_write, schema=schema)],
+            tables_to_delete=[],
+            tables_to_keep=[
+                MockFeatureView(name=self.collection_to_write, schema=schema)
+            ],
             entities_to_delete=None,
             entities_to_keep=None,
             partial=None,
         )
 
-        assert utility.has_collection(collection_to_write) is True
-        assert utility.has_collection(collection_to_delete) is False
-        assert len(utility.list_collections()) == 1
+        assert f"Collection {self.collection_to_write} already exists." in caplog.text
+
+        # Cleaning up
+        utility.drop_collection(self.collection_to_write)
+
+    def test_milvus_update_collection_with_unsupported_schema(
+        self, caplog, milvus_online_setup
+    ):
+
+        # Checking to see if Milvus will raise an exception since primary key of type FLOAT_VECTOR is unsupported.
+        with pytest.raises(Exception):
+            MilvusOnlineStoreConfig(host=HOST)
+            # Creating a common schema for collection
+            schema = CollectionSchema(
+                fields=[
+                    FieldSchema(
+                        "int64", DataType.INT64, description="int64", is_primary=False
+                    ),
+                    FieldSchema(
+                        "float_vector", DataType.FLOAT_VECTOR, is_primary=True, dim=128
+                    ),
+                ]
+            )
+
+            MilvusOnlineStore().update(
+                config=repo_config,
+                tables_to_delete=[],
+                tables_to_keep=[
+                    MockFeatureView(name=self.collection_to_write, schema=schema)
+                ],
+                entities_to_delete=None,
+                entities_to_keep=None,
+                partial=None,
+            )
+
+    def test_milvus_update_delete_collection(self, caplog, milvus_online_setup):
+
+        MilvusOnlineStoreConfig(host=HOST)
+
+        # Creating a common schema for collection
+        schema = CollectionSchema(
+            fields=[
+                FieldSchema(
+                    "int64", DataType.INT64, description="int64", is_primary=True
+                ),
+                FieldSchema(
+                    "float_vector", DataType.FLOAT_VECTOR, is_primary=False, dim=128
+                ),
+            ]
+        )
+
+        MilvusOnlineStore().update(
+            config=repo_config,
+            tables_to_delete=[],
+            tables_to_keep=[
+                MockFeatureView(name=self.collection_to_delete, schema=schema)
+            ],
+            entities_to_delete=None,
+            entities_to_keep=None,
+            partial=None,
+        )
+
+        MilvusOnlineStore().update(
+            config=repo_config,
+            tables_to_delete=[
+                MockFeatureView(name=self.collection_to_delete, schema=None)
+            ],
+            tables_to_keep=[],
+            entities_to_delete=None,
+            entities_to_keep=None,
+            partial=None,
+        )
+        assert utility.has_collection(self.collection_to_delete) is False
+        assert len(utility.list_collections()) == 0
+        assert (
+            f"Collection {self.collection_to_delete} has been deleted successfully."
+            in caplog.text
+        )
+        # Cleaning up
+        utility.drop_collection(self.collection_to_delete)
+
+    def test_milvus_update_delete_unavailable_collection(
+        self, caplog, milvus_online_setup
+    ):
+
+        MilvusOnlineStoreConfig(host=HOST)
+
+        MilvusOnlineStore().update(
+            config=repo_config,
+            tables_to_delete=[
+                MockFeatureView(name=self.collection_to_delete, schema=None)
+            ],
+            tables_to_keep=[],
+            entities_to_delete=None,
+            entities_to_keep=None,
+            partial=None,
+        )
+
+        assert (
+            f"Collection {self.collection_to_delete} does not exist or is already deleted."
+            in caplog.text
+        )
+        # Cleaning up
+        utility.drop_collection(self.collection_to_delete)

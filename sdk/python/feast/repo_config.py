@@ -203,6 +203,8 @@ class RepoConfig(FeastBaseModel):
                 self._offline_config = "redshift"
             elif data["provider"] == "azure":
                 self._offline_config = "mssql"
+            elif data["provider"] == "milvus":
+                self._online_config = "milvus"
 
         self._online_store = None
         if "online_store" in data:
