@@ -3,10 +3,10 @@ from dataclasses import dataclass
 from typing import List, Optional
 
 import pytest
-from pymilvus import CollectionSchema, DataType, FieldSchema, utility
-from pymilvus.client.stub import Milvus
+from pymilvus import CollectionSchema, DataType, FieldSchema, connections, utility
 
 from feast.expediagroup.vectordb.milvus_online_store import (
+    MilvusConnectionManager,
     MilvusOnlineStore,
     MilvusOnlineStoreConfig,
 )
@@ -23,6 +23,7 @@ PROVIDER = "aws"
 TABLE_NAME = "milvus_online_store"
 REGION = "us-west-2"
 HOST = "localhost"
+ALIAS = "milvus"
 
 
 @dataclass
@@ -31,13 +32,15 @@ class MockFeatureView:
     schema: Optional[List[Field]]
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="session")
 def repo_config():
     return RepoConfig(
         registry=REGISTRY,
         project=PROJECT,
         provider=PROVIDER,
-        online_store=MilvusOnlineStoreConfig(host=HOST),
+        online_store=MilvusOnlineStoreConfig(
+            alias=ALIAS, host=HOST, username="abc", password="cde"
+        ),
         offline_store=FileOfflineStoreConfig(),
         entity_key_serialization_version=2,
     )
@@ -48,7 +51,7 @@ def milvus_online_store():
     return MilvusOnlineStore()
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="session")
 def milvus_online_setup():
     # Creating an online store through embedded Milvus for all tests in the class
     online_store_creator = MilvusOnlineStoreCreator("milvus")
@@ -60,6 +63,53 @@ def milvus_online_setup():
     online_store_creator.teardown()
 
 
+class TestMilvusConnectionManager:
+    def test_connection_manager(self, repo_config, caplog, milvus_online_setup, mocker):
+
+        mocker.patch("pymilvus.connections.connect")
+        with MilvusConnectionManager(repo_config.online_store):
+            assert (
+                f"Connecting to Milvus with alias {repo_config.online_store.alias} and host {repo_config.online_store.host} and default port {repo_config.online_store.port}."
+                in caplog.text
+            )
+
+        connections.connect.assert_called_once_with(
+            host=repo_config.online_store.host,
+            username=repo_config.online_store.username,
+            password=repo_config.online_store.password,
+            use_secure=True,
+        )
+
+    def test_context_manager_exit(
+        self, repo_config, caplog, milvus_online_setup, mocker
+    ):
+        # Create a mock for connections.disconnect
+        mock_disconnect = mocker.patch("pymilvus.connections.disconnect")
+
+        # Create a mock logger to capture log calls
+        mock_logger = mocker.patch(
+            "feast.expediagroup.vectordb.milvus_online_store.logger", autospec=True
+        )
+
+        with MilvusConnectionManager(repo_config.online_store):
+            print("Doing something")
+
+        # Assert that connections.disconnect was called with the expected argument
+        mock_disconnect.assert_called_once_with(repo_config.online_store.alias)
+
+        # Assert that logger.info was called with expected messages
+        expected_log_calls = [
+            mocker.call("Closing the connection to Milvus"),
+            mocker.call("Connection Closed"),
+        ]
+        mock_logger.info.assert_has_calls(expected_log_calls)
+
+        with pytest.raises(Exception):
+            with MilvusConnectionManager(repo_config.online_store):
+                raise Exception("Test Exception")
+        mock_logger.error.assert_called_once()
+
+
 class TestMilvusOnlineStore:
 
     collection_to_write = "Collection2"
@@ -67,16 +117,18 @@ class TestMilvusOnlineStore:
 
     def setup_method(self, milvus_online_setup):
         # Ensuring that the collections created are dropped before the tests are run
-        MilvusOnlineStoreConfig(host=HOST)
-        utility.drop_collection(self.collection_to_delete)
-        utility.drop_collection(self.collection_to_write)
+        connections.connect(alias="default", host=HOST, port=19530)
+        # Dropping collections if they exist
+        if utility.has_collection(self.collection_to_delete):
+            utility.drop_collection(self.collection_to_delete)
+        if utility.has_collection(self.collection_to_write):
+            utility.drop_collection(self.collection_to_write)
+        # Closing the temporary collection to do this
+        connections.disconnect("default")
 
     def test_milvus_update_add_collection(
-        self, caplog, milvus_online_setup, repo_config
+        self, repo_config, milvus_online_setup, caplog
     ):
-
-        MilvusOnlineStoreConfig(host=HOST)
-
         # Creating a common schema for collection
         schema = CollectionSchema(
             fields=[
@@ -106,12 +158,9 @@ class TestMilvusOnlineStore:
             in caplog.text
         )
 
-        # Cleaning up
-        utility.drop_collection(self.collection_to_write)
-
-    def test_milvus_update_add_existing_collection(self, caplog, milvus_online_setup):
-
-        MilvusOnlineStoreConfig(host=HOST)
+    def test_milvus_update_add_existing_collection(
+        self, repo_config, caplog, milvus_online_setup
+    ):
 
         # Creating a common schema for collection
         schema = CollectionSchema(
@@ -150,16 +199,12 @@ class TestMilvusOnlineStore:
 
         assert f"Collection {self.collection_to_write} already exists." in caplog.text
 
-        # Cleaning up
-        utility.drop_collection(self.collection_to_write)
-
     def test_milvus_update_collection_with_unsupported_schema(
-        self, caplog, milvus_online_setup
+        self, repo_config, caplog, milvus_online_setup
     ):
 
         # Checking to see if Milvus will raise an exception since primary key of type FLOAT_VECTOR is unsupported.
         with pytest.raises(Exception):
-            MilvusOnlineStoreConfig(host=HOST)
             # Creating a common schema for collection
             schema = CollectionSchema(
                 fields=[
@@ -183,9 +228,9 @@ class TestMilvusOnlineStore:
                 partial=None,
             )
 
-    def test_milvus_update_delete_collection(self, caplog, milvus_online_setup):
-
-        MilvusOnlineStoreConfig(host=HOST)
+    def test_milvus_update_delete_collection(
+        self, repo_config, caplog, milvus_online_setup
+    ):
 
         # Creating a common schema for collection
         schema = CollectionSchema(
@@ -226,14 +271,10 @@ class TestMilvusOnlineStore:
             f"Collection {self.collection_to_delete} has been deleted successfully."
             in caplog.text
         )
-        # Cleaning up
-        utility.drop_collection(self.collection_to_delete)
 
     def test_milvus_update_delete_unavailable_collection(
-        self, caplog, milvus_online_setup
+        self, repo_config, caplog, milvus_online_setup
     ):
-
-        MilvusOnlineStoreConfig(host=HOST)
 
         MilvusOnlineStore().update(
             config=repo_config,
@@ -250,5 +291,3 @@ class TestMilvusOnlineStore:
             f"Collection {self.collection_to_delete} does not exist or is already deleted."
             in caplog.text
         )
-        # Cleaning up
-        utility.drop_collection(self.collection_to_delete)
