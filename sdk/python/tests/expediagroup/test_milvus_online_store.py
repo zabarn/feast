@@ -279,7 +279,7 @@ class TestMilvusOnlineStore:
         MilvusOnlineStore().update(
             config=repo_config,
             tables_to_delete=[
-                MockFeatureView(name=self.collection_to_delete, schema=None)
+                MockFeatureView(name="abc", schema=None)
             ],
             tables_to_keep=[],
             entities_to_delete=None,
@@ -288,6 +288,6 @@ class TestMilvusOnlineStore:
         )
 
         assert (
-            f"Collection {self.collection_to_delete} does not exist or is already deleted."
+            "Collection abc does not exist or is already deleted."
             in caplog.text
         )
