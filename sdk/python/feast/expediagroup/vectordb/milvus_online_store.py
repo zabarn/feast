@@ -103,7 +103,7 @@ class MilvusOnlineStore(VectorOnlineStore):
                 collection_available = utility.has_collection(table_to_keep.name)
                 try:
                     if collection_available:
-                        logger.error(f"Collection {table_to_keep.name} already exists.")
+                        logger.info(f"Collection {table_to_keep.name} already exists.")
                     else:
                         Collection(name=table_to_keep.name, schema=table_to_keep.schema)
                         logger.info(
