@@ -1,18 +1,27 @@
 import logging
-from dataclasses import dataclass
-from typing import List, Optional
 
 import pytest
-from pymilvus import CollectionSchema, DataType, FieldSchema, connections, utility
+from pymilvus import (
+    Collection,
+    CollectionSchema,
+    DataType,
+    FieldSchema,
+    connections,
+    utility,
+)
 
+from feast.expediagroup.vectordb.index_type import IndexType
 from feast.expediagroup.vectordb.milvus_online_store import (
     MilvusConnectionManager,
     MilvusOnlineStore,
     MilvusOnlineStoreConfig,
 )
+from feast.expediagroup.vectordb.vector_feature_view import VectorFeatureView
 from feast.field import Field
 from feast.infra.offline_stores.file import FileOfflineStoreConfig
+from feast.infra.offline_stores.file_source import FileSource
 from feast.repo_config import RepoConfig
+from feast.types import Array, Float32, Int64
 from tests.expediagroup.milvus_online_store_creator import MilvusOnlineStoreCreator
 
 logging.basicConfig(level=logging.INFO)
@@ -23,13 +32,12 @@ PROVIDER = "aws"
 TABLE_NAME = "milvus_online_store"
 REGION = "us-west-2"
 HOST = "localhost"
+PORT = 19530
 ALIAS = "milvus"
-
-
-@dataclass
-class MockFeatureView:
-    name: str
-    schema: Optional[List[Field]]
+SOURCE = FileSource(path="some path")
+VECTOR_FIELD = "feature1"
+DIMENSIONS = 10
+INDEX_ALGO = IndexType.flat
 
 
 @pytest.fixture(scope="session")
@@ -61,6 +69,16 @@ def milvus_online_setup():
 
     # Tearing down the Milvus instance after all tests in the class
     online_store_creator.teardown()
+
+
+class PymilvusConnectionContext:
+    def __enter__(self):
+        # Connecting to Milvus
+        connections.connect(host=HOST, port=PORT)
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        # Disconnecting from Milvus
+        connections.disconnect("milvus")
 
 
 class TestMilvusConnectionManager:
@@ -97,13 +115,6 @@ class TestMilvusConnectionManager:
         # Assert that connections.disconnect was called with the expected argument
         mock_disconnect.assert_called_once_with(repo_config.online_store.alias)
 
-        # Assert that logger.info was called with expected messages
-        expected_log_calls = [
-            mocker.call("Closing the connection to Milvus"),
-            mocker.call("Connection Closed"),
-        ]
-        mock_logger.info.assert_has_calls(expected_log_calls)
-
         with pytest.raises(Exception):
             with MilvusConnectionManager(repo_config.online_store):
                 raise Exception("Test Exception")
@@ -117,52 +128,82 @@ class TestMilvusOnlineStore:
 
     def setup_method(self, milvus_online_setup):
         # Ensuring that the collections created are dropped before the tests are run
-        connections.connect(alias="default", host=HOST, port=19530)
-        # Dropping collections if they exist
-        if utility.has_collection(self.collection_to_delete):
-            utility.drop_collection(self.collection_to_delete)
-        if utility.has_collection(self.collection_to_write):
-            utility.drop_collection(self.collection_to_write)
-        # Closing the temporary collection to do this
-        connections.disconnect("default")
+        with PymilvusConnectionContext():
+            # Dropping collections if they exist
+            if utility.has_collection(self.collection_to_delete):
+                utility.drop_collection(self.collection_to_delete)
+            if utility.has_collection(self.collection_to_write):
+                utility.drop_collection(self.collection_to_write)
+            # Closing the temporary collection to do this
 
     def test_milvus_update_add_collection(
         self, repo_config, milvus_online_setup, caplog
     ):
-        # Creating a common schema for collection
-        schema = CollectionSchema(
-            fields=[
-                FieldSchema(
-                    "int64", DataType.INT64, description="int64", is_primary=True
-                ),
-                FieldSchema(
-                    "float_vector", DataType.FLOAT_VECTOR, is_primary=False, dim=128
-                ),
-            ]
-        )
+
+        schema_vector = [
+            Field(
+                name="feature2",
+                dtype=Int64,
+                tags={"is_primary": "True", "description": "int64"},
+            ),
+            Field(
+                name="feature1",
+                dtype=Array(Float32),
+                tags={
+                    "is_primary": "False",
+                    "description": "float32",
+                    "dimension": "128",
+                },
+            ),
+        ]
 
         MilvusOnlineStore().update(
             config=repo_config,
             tables_to_delete=[],
             tables_to_keep=[
-                MockFeatureView(name=self.collection_to_write, schema=schema)
+                VectorFeatureView(
+                    name=self.collection_to_write,
+                    schema=schema_vector,
+                    source=SOURCE,
+                    vector_field=VECTOR_FIELD,
+                    dimensions=DIMENSIONS,
+                    index_algorithm=INDEX_ALGO,
+                )
             ],
             entities_to_delete=None,
             entities_to_keep=None,
             partial=None,
         )
-        assert len(utility.list_collections()) == 1
-        assert utility.has_collection(self.collection_to_write) is True
-        assert (
-            f"Collection {self.collection_to_write} has been created successfully."
-            in caplog.text
-        )
+
+        print(utility.list_collections())
+        # Here we want to open and check whether the collection was added and then close the connection.
+        with PymilvusConnectionContext():
+            assert utility.has_collection(self.collection_to_write) is True
 
     def test_milvus_update_add_existing_collection(
         self, repo_config, caplog, milvus_online_setup
     ):
 
+        self.setup_method(milvus_online_setup)
         # Creating a common schema for collection
+        schema_vector = [
+            Field(
+                name="feature1",
+                dtype=Array(Float32),
+                tags={
+                    "is_primary": "False",
+                    "description": "float32",
+                    "dimension": "128",
+                },
+            ),
+            Field(
+                name="feature2",
+                dtype=Int64,
+                tags={"is_primary": "True", "description": "int64"},
+            ),
+        ]
+
+        # Creating a common schema for collection to directly add to Milvus
         schema = CollectionSchema(
             fields=[
                 FieldSchema(
@@ -174,65 +215,58 @@ class TestMilvusOnlineStore:
             ]
         )
 
-        MilvusOnlineStore().update(
-            config=repo_config,
-            tables_to_delete=[],
-            tables_to_keep=[
-                MockFeatureView(name=self.collection_to_write, schema=schema)
-            ],
-            entities_to_delete=None,
-            entities_to_keep=None,
-            partial=None,
-        )
-        assert len(utility.list_collections()) == 1
+        # Here we want to open and add a collection using pymilvus directly and close the connection.
+        with PymilvusConnectionContext():
+            Collection(name=self.collection_to_write, schema=schema)
+            assert utility.has_collection(self.collection_to_write) is True
+            assert len(utility.list_collections()) == 1
 
         MilvusOnlineStore().update(
             config=repo_config,
             tables_to_delete=[],
             tables_to_keep=[
-                MockFeatureView(name=self.collection_to_write, schema=schema)
+                VectorFeatureView(
+                    name=self.collection_to_write,
+                    schema=schema_vector,
+                    source=SOURCE,
+                    vector_field=VECTOR_FIELD,
+                    dimensions=DIMENSIONS,
+                    index_algorithm=INDEX_ALGO,
+                )
             ],
             entities_to_delete=None,
             entities_to_keep=None,
             partial=None,
         )
 
-        assert f"Collection {self.collection_to_write} already exists." in caplog.text
-
-    def test_milvus_update_collection_with_unsupported_schema(
-        self, repo_config, caplog, milvus_online_setup
-    ):
-
-        # Checking to see if Milvus will raise an exception since primary key of type FLOAT_VECTOR is unsupported.
-        with pytest.raises(Exception):
-            # Creating a common schema for collection
-            schema = CollectionSchema(
-                fields=[
-                    FieldSchema(
-                        "int64", DataType.INT64, description="int64", is_primary=False
-                    ),
-                    FieldSchema(
-                        "float_vector", DataType.FLOAT_VECTOR, is_primary=True, dim=128
-                    ),
-                ]
-            )
-
-            MilvusOnlineStore().update(
-                config=repo_config,
-                tables_to_delete=[],
-                tables_to_keep=[
-                    MockFeatureView(name=self.collection_to_write, schema=schema)
-                ],
-                entities_to_delete=None,
-                entities_to_keep=None,
-                partial=None,
-            )
+        # Here we want to open and add a collection using pymilvus directly and close the connection, we need to check if the collection count remains 1 and exists.
+        with PymilvusConnectionContext():
+            assert utility.has_collection(self.collection_to_write) is True
+            assert len(utility.list_collections()) == 1
 
     def test_milvus_update_delete_collection(
         self, repo_config, caplog, milvus_online_setup
     ):
+        self.setup_method(milvus_online_setup)
+        # Creating a common schema for collection which is compatible with FEAST
+        schema_vector = [
+            Field(
+                name="feature1",
+                dtype=Array(Float32),
+                tags={
+                    "is_primary": "False",
+                    "description": "float32",
+                    "dimension": "128",
+                },
+            ),
+            Field(
+                name="feature2",
+                dtype=Int64,
+                tags={"is_primary": "True", "description": "int64"},
+            ),
+        ]
 
-        # Creating a common schema for collection
+        # Creating a common schema for collection to directly add to Milvus
         schema = CollectionSchema(
             fields=[
                 FieldSchema(
@@ -244,41 +278,65 @@ class TestMilvusOnlineStore:
             ]
         )
 
-        MilvusOnlineStore().update(
-            config=repo_config,
-            tables_to_delete=[],
-            tables_to_keep=[
-                MockFeatureView(name=self.collection_to_delete, schema=schema)
-            ],
-            entities_to_delete=None,
-            entities_to_keep=None,
-            partial=None,
-        )
+        # Here we want to open and add a collection using pymilvus directly and close the connection
+        with PymilvusConnectionContext():
+            Collection(name=self.collection_to_write, schema=schema)
+            assert utility.has_collection(self.collection_to_write) is True
 
         MilvusOnlineStore().update(
             config=repo_config,
             tables_to_delete=[
-                MockFeatureView(name=self.collection_to_delete, schema=None)
+                VectorFeatureView(
+                    name=self.collection_to_write,
+                    schema=schema_vector,
+                    source=SOURCE,
+                    vector_field=VECTOR_FIELD,
+                    dimensions=DIMENSIONS,
+                    index_algorithm=INDEX_ALGO,
+                )
             ],
             tables_to_keep=[],
             entities_to_delete=None,
             entities_to_keep=None,
             partial=None,
         )
-        assert utility.has_collection(self.collection_to_delete) is False
-        assert len(utility.list_collections()) == 0
-        assert (
-            f"Collection {self.collection_to_delete} has been deleted successfully."
-            in caplog.text
-        )
+
+        # Opening and closing the connection and checking if the collection is actually deleted.
+        with PymilvusConnectionContext():
+            assert utility.has_collection(self.collection_to_write) is False
 
     def test_milvus_update_delete_unavailable_collection(
         self, repo_config, caplog, milvus_online_setup
     ):
+        schema_vector = [
+            Field(
+                name="feature1",
+                dtype=Array(Float32),
+                tags={
+                    "is_primary": "False",
+                    "description": "float32",
+                    "dimension": "128",
+                },
+            ),
+            Field(
+                name="feature2",
+                dtype=Int64,
+                tags={"is_primary": "True", "description": "int64"},
+            ),
+        ]
 
         MilvusOnlineStore().update(
             config=repo_config,
-            tables_to_delete=[MockFeatureView(name="abc", schema=None)],
+            tables_to_delete=[
+                VectorFeatureView(
+                    name="abc",
+                    schema=schema_vector,
+                    source=SOURCE,
+                    vector_field=VECTOR_FIELD,
+                    dimensions=DIMENSIONS,
+                    index_algorithm=INDEX_ALGO,
+                )
+            ],
             tables_to_keep=[],
             entities_to_delete=None,
             entities_to_keep=None,

@@ -3,14 +3,32 @@ from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 from pydantic.typing import Literal
-from pymilvus import Collection, connections, utility
+from pymilvus import (
+    Collection,
+    CollectionSchema,
+    DataType,
+    FieldSchema,
+    connections,
+    utility,
+)
 
 from feast import Entity, RepoConfig
 from feast.expediagroup.vectordb.vector_feature_view import VectorFeatureView
 from feast.expediagroup.vectordb.vector_online_store import VectorOnlineStore
+from feast.field import Field
 from feast.protos.feast.types.EntityKey_pb2 import EntityKey as EntityKeyProto
 from feast.protos.feast.types.Value_pb2 import Value as ValueProto
 from feast.repo_config import FeastConfigBaseModel
+from feast.types import (
+    Array,
+    FeastType,
+    Float32,
+    Float64,
+    Int32,
+    Int64,
+    Invalid,
+    String,
+)
 from feast.usage import log_exceptions_and_usage
 
 logger = logging.getLogger(__name__)
@@ -105,7 +123,12 @@ class MilvusOnlineStore(VectorOnlineStore):
                     if collection_available:
                         logger.info(f"Collection {table_to_keep.name} already exists.")
                     else:
-                        Collection(name=table_to_keep.name, schema=table_to_keep.schema)
+                        schema = self._convert_featureview_schema_to_milvus_readable(
+                            table_to_keep.schema
+                        )
+
+                        collection = Collection(name=table_to_keep.name, schema=schema)
+                        logger.info(f"Collection name is {collection.name}")
                         logger.info(
                             f"Collection {table_to_keep.name} has been created successfully."
                         )
@@ -136,3 +159,65 @@ class MilvusOnlineStore(VectorOnlineStore):
         raise NotImplementedError(
             "to be implemented in https://jira.expedia.biz/browse/EAPC-7974"
         )
+
+    def _convert_featureview_schema_to_milvus_readable(
+        self, feast_schema: List[Field]
+    ) -> CollectionSchema:
+        """
+        Converting a schema understood by Feast to a schema that is readable by Milvus so that it
+        can be used when a collection is created in Milvus.
+
+        Parameters:
+        feast_schema (List[Field]): Schema stored in VectorFeatureView.
+
+        Returns:
+        (CollectionSchema): Schema readable by Milvus.
+
+        """
+        boolean_mapping_from_string = {"True": True, "False": False}
+        field_list = []
+
+        for field in feast_schema:
+            data_type = self._feast_to_milvus_data_type(field.dtype)
+            field_name = field.name
+            description = field.tags.get("description")
+            is_primary = boolean_mapping_from_string.get(field.tags.get("is_primary"))
+            dimension = field.tags.get("dimension")
+
+            if dimension is not None:
+                dimension = int(field.tags.get("dimension"))
+            # Appending the above converted values to construct a FieldSchema
+            field_list.append(
+                FieldSchema(
+                    name=field_name,
+                    dtype=data_type,
+                    description=description,
+                    is_primary=is_primary,
+                    dim=dimension,
+                )
+            )
+        # Returning a CollectionSchema which is a list of type FieldSchema.
+        return CollectionSchema(field_list)
+
+    def _feast_to_milvus_data_type(self, feast_type: FeastType) -> DataType:
+        """
+        Mapping for converting Feast data type to a data type compatible wih Milvus.
+
+        Parameters:
+        feast_type (FeastType): This is a type associated with a Feature that is stored in a VectorFeatureView, readable with Feast.
+
+        Returns:
+        DataType : DataType associated with what Milvus can understand and associate its Feature types to
+        """
+
+        return {
+            Int32: DataType.INT32,
+            Int64: DataType.INT64,
+            Float32: DataType.FLOAT,
+            Float64: DataType.DOUBLE,
+            String: DataType.STRING,
+            Invalid: DataType.UNKNOWN,
+            Array(Float32): DataType.FLOAT_VECTOR,
+            # TODO: Need to think about list of binaries and list of bytes
+            # FeastType.BYTES_LIST: DataType.BINARY_VECTOR
+        }.get(feast_type, None)
