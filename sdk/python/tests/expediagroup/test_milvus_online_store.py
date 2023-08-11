@@ -149,11 +149,7 @@ class TestMilvusOnlineStore:
             Field(
                 name="feature1",
                 dtype=Array(Float32),
-                tags={
-                    "is_primary": "False",
-                    "description": "float32",
-                    "dimension": "128",
-                },
+                tags={"is_primary": "False", "description": "float32"},
             ),
         ]
 
@@ -175,10 +171,27 @@ class TestMilvusOnlineStore:
             partial=None,
         )
 
-        print(utility.list_collections())
+        # Milvus schema to be checked if the schema from Feast to Milvus was converted accurately
+        schema = CollectionSchema(
+            description="",
+            fields=[
+                FieldSchema(
+                    "feature1",
+                    DataType.FLOAT_VECTOR,
+                    description="float32",
+                    is_primary=False,
+                    dim=10,
+                ),
+                FieldSchema(
+                    "feature2", DataType.INT64, description="int64", is_primary=True
+                ),
+            ],
+        )
+
         # Here we want to open and check whether the collection was added and then close the connection.
         with PymilvusConnectionContext():
             assert utility.has_collection(self.collection_to_write) is True
+            assert Collection(self.collection_to_write).schema == schema
 
     def test_milvus_update_add_existing_collection(
         self, repo_config, caplog, milvus_online_setup

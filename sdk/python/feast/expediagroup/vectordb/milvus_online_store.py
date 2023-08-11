@@ -124,7 +124,9 @@ class MilvusOnlineStore(VectorOnlineStore):
                         logger.info(f"Collection {table_to_keep.name} already exists.")
                     else:
                         schema = self._convert_featureview_schema_to_milvus_readable(
-                            table_to_keep.schema
+                            table_to_keep.schema,
+                            table_to_keep.vector_field,
+                            table_to_keep.dimensions,
                         )
 
                         collection = Collection(name=table_to_keep.name, schema=schema)
@@ -161,7 +163,7 @@ class MilvusOnlineStore(VectorOnlineStore):
         )
 
     def _convert_featureview_schema_to_milvus_readable(
-        self, feast_schema: List[Field]
+        self, feast_schema: List[Field], vector_field, vector_field_dimensions
     ) -> CollectionSchema:
         """
         Converting a schema understood by Feast to a schema that is readable by Milvus so that it
@@ -176,16 +178,23 @@ class MilvusOnlineStore(VectorOnlineStore):
         """
         boolean_mapping_from_string = {"True": True, "False": False}
         field_list = []
+        dimension = None
 
         for field in feast_schema:
-            data_type = self._feast_to_milvus_data_type(field.dtype)
-            field_name = field.name
-            description = field.tags.get("description")
-            is_primary = boolean_mapping_from_string.get(field.tags.get("is_primary"))
-            dimension = field.tags.get("dimension")
+            if field.name == vector_field:
+                field_name = vector_field
+                dimension = vector_field_dimensions
+            else:
+                field_name = field.name
 
-            if dimension is not None:
-                dimension = int(field.tags.get("dimension"))
+            data_type = self._feast_to_milvus_data_type(field.dtype)
+
+            if field.tags:
+                description = field.tags.get("description", " ")
+                is_primary = boolean_mapping_from_string.get(
+                    field.tags.get("is_primary", "False")
+                )
+
             # Appending the above converted values to construct a FieldSchema
             field_list.append(
                 FieldSchema(
