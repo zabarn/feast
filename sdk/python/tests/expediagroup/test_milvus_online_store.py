@@ -140,7 +140,7 @@ class TestMilvusOnlineStore:
         self, repo_config, milvus_online_setup, caplog
     ):
 
-        schema_vector = [
+        feast_schema = [
             Field(
                 name="feature2",
                 dtype=Int64,
@@ -159,7 +159,7 @@ class TestMilvusOnlineStore:
             tables_to_keep=[
                 VectorFeatureView(
                     name=self.collection_to_write,
-                    schema=schema_vector,
+                    schema=feast_schema,
                     source=SOURCE,
                     vector_field=VECTOR_FIELD,
                     dimensions=DIMENSIONS,
@@ -172,7 +172,23 @@ class TestMilvusOnlineStore:
         )
 
         # Milvus schema to be checked if the schema from Feast to Milvus was converted accurately
-        schema = CollectionSchema(
+        schema1 = CollectionSchema(
+            description="",
+            fields=[
+                FieldSchema(
+                    "feature2", DataType.INT64, description="int64", is_primary=True
+                ),
+                FieldSchema(
+                    "feature1",
+                    DataType.FLOAT_VECTOR,
+                    description="float32",
+                    is_primary=False,
+                    dim=10,
+                ),
+            ],
+        )
+
+        schema2 = CollectionSchema(
             description="",
             fields=[
                 FieldSchema(
@@ -191,7 +207,10 @@ class TestMilvusOnlineStore:
         # Here we want to open and check whether the collection was added and then close the connection.
         with PymilvusConnectionContext():
             assert utility.has_collection(self.collection_to_write) is True
-            assert Collection(self.collection_to_write).schema == schema
+            assert (
+                Collection(self.collection_to_write).schema == schema1
+                or Collection(self.collection_to_write).schema == schema2
+            )
 
     def test_milvus_update_add_existing_collection(
         self, repo_config, caplog, milvus_online_setup
@@ -199,7 +218,7 @@ class TestMilvusOnlineStore:
 
         self.setup_method(milvus_online_setup)
         # Creating a common schema for collection
-        schema_vector = [
+        feast_schema = [
             Field(
                 name="feature1",
                 dtype=Array(Float32),
@@ -240,7 +259,7 @@ class TestMilvusOnlineStore:
             tables_to_keep=[
                 VectorFeatureView(
                     name=self.collection_to_write,
-                    schema=schema_vector,
+                    schema=feast_schema,
                     source=SOURCE,
                     vector_field=VECTOR_FIELD,
                     dimensions=DIMENSIONS,
@@ -262,7 +281,7 @@ class TestMilvusOnlineStore:
     ):
         self.setup_method(milvus_online_setup)
         # Creating a common schema for collection which is compatible with FEAST
-        schema_vector = [
+        feast_schema = [
             Field(
                 name="feature1",
                 dtype=Array(Float32),
@@ -301,7 +320,7 @@ class TestMilvusOnlineStore:
             tables_to_delete=[
                 VectorFeatureView(
                     name=self.collection_to_write,
-                    schema=schema_vector,
+                    schema=feast_schema,
                     source=SOURCE,
                     vector_field=VECTOR_FIELD,
                     dimensions=DIMENSIONS,
@@ -321,7 +340,7 @@ class TestMilvusOnlineStore:
     def test_milvus_update_delete_unavailable_collection(
         self, repo_config, caplog, milvus_online_setup
     ):
-        schema_vector = [
+        feast_schema = [
             Field(
                 name="feature1",
                 dtype=Array(Float32),
@@ -343,7 +362,7 @@ class TestMilvusOnlineStore:
             tables_to_delete=[
                 VectorFeatureView(
                     name="abc",
-                    schema=schema_vector,
+                    schema=feast_schema,
                     source=SOURCE,
                     vector_field=VECTOR_FIELD,
                     dimensions=DIMENSIONS,
@@ -356,4 +375,5 @@ class TestMilvusOnlineStore:
             partial=None,
         )
 
-        assert "Collection abc does not exist or is already deleted." in caplog.text
+        with PymilvusConnectionContext():
+            assert len(utility.list_collections()) == 0

@@ -146,7 +146,7 @@ class MilvusOnlineStore(VectorOnlineStore):
                             f"Collection {table_to_delete.name} has been deleted successfully."
                         )
                     else:
-                        return logger.error(
+                        logger.warning(
                             f"Collection {table_to_delete.name} does not exist or is already deleted."
                         )
                 except Exception as e:
