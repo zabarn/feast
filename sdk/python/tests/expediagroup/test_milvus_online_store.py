@@ -140,6 +140,27 @@ class TestMilvusOnlineStore:
                 utility.drop_collection(self.collection_to_write)
             # Closing the temporary collection to do this
 
+    def create_n_customer_test_samples_milvus(self, n=10):
+        # Utility method to create sample data
+        return [
+            (
+                EntityKeyProto(
+                    join_keys=["customer"],
+                    entity_values=[ValueProto(string_val=str(i))],
+                ),
+                {
+                    "avg_orders_day": ValueProto(
+                        float_list_val=FloatList(val=[1, 2, 3, 4, 5])
+                    ),
+                    "name": ValueProto(string_val="John"),
+                    "age": ValueProto(int64_val=3),
+                },
+                datetime.utcnow(),
+                None,
+            )
+            for i in range(n)
+        ]
+
     def test_milvus_update_add_collection(
         self, repo_config, milvus_online_setup, caplog
     ):
@@ -386,27 +407,7 @@ class TestMilvusOnlineStore:
 
         total_rows_to_write = 100
 
-        def create_n_customer_test_samples_milvus(n=10):
-            return [
-                (
-                    EntityKeyProto(
-                        join_keys=["customer"],
-                        entity_values=[ValueProto(string_val=str(i))],
-                    ),
-                    {
-                        "avg_orders_day": ValueProto(
-                            float_list_val=FloatList(val=[1, 2, 3, 4, 5])
-                        ),
-                        "name": ValueProto(string_val="John"),
-                        "age": ValueProto(int64_val=3),
-                    },
-                    datetime.utcnow(),
-                    None,
-                )
-                for i in range(n)
-            ]
-
-        data = create_n_customer_test_samples_milvus(n=total_rows_to_write)
+        data = self.create_n_customer_test_samples_milvus(n=total_rows_to_write)
 
         # Creating a common schema for collection to directly add to Milvus
         milvus_schema = CollectionSchema(
