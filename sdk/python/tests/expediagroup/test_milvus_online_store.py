@@ -132,9 +132,7 @@ class TestMilvusOnlineStore:
             if utility.has_collection(self.unavailable_collection):
                 utility.drop_collection(self.unavailable_collection)
             # Closing the temporary collection to do this
-            
-        yield
-
+    
     def create_n_customer_test_samples_milvus(self, n=10):
         # Utility method to create sample data
         return [
