@@ -96,9 +96,9 @@ class MilvusOnlineStore(VectorOnlineStore):
     ) -> None:
         with MilvusConnectionManager(config.online_store):
             try:
-                rows = self._format_data_for_milvus(data)
+                entities = self._format_data_for_milvus(data)
                 collection_to_load_data = Collection(table.name)
-                collection_to_load_data.insert(rows)
+                collection_to_load_data.insert(entities)
                 #  The flush call will seal any remaining segments and send them for indexing
                 collection_to_load_data.flush()
             except Exception as e:
@@ -257,11 +257,29 @@ class MilvusOnlineStore(VectorOnlineStore):
             feature = []
             for feature_name, val in values.items():
                 val_type = val.WhichOneof("val")
-                value = getattr(val, val_type)
                 if val_type == "float_list_val":
-                    value = np.array(value.val)
-                # TODO: Check binary vector conversion
-                feature.append(value)
+                    float_list = val.float_list_val.val
+                    final_float_list = np.array(float_list)
+                    feature.append(final_float_list)
+                # TODO: Test out binary lists
+                if val_type == "biinary_list_val":
+                    binary_list = val.binary_list_val.val
+                    feature.append(binary_list)
+                if val_type == "string_val":
+                    string_val = val.string_val
+                    feature.append(string_val)
+                if val_type == "int32_val":
+                    int32_val = val.int32_val
+                    feature.append(int32_val)
+                if val_type == "int64_val":
+                    int64_val = val.int64_val
+                    feature.append(int64_val)
+                if val_type == "bytes_val":
+                    bytes_val = val.bytes_val
+                    feature.append(bytes_val)
+                if val_type == "float_val":
+                    float_val = val.float_val
+                    feature.append(float_val)
             milvus_data.append(feature)
 
         transformed_data = [list(item) for item in zip(*milvus_data)]

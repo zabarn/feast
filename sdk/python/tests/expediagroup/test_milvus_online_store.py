@@ -143,7 +143,7 @@ class TestMilvusOnlineStore:
                 ),
                 {
                     "avg_orders_day": ValueProto(
-                        float_list_val=FloatList(val=[1.0, 2.1, 3.3, 4.0, 5.0])
+                        float_list_val=FloatList(val=[1, 2, 3, 4, 5])
                     ),
                     "name": ValueProto(string_val="John"),
                     "age": ValueProto(int64_val=3),
