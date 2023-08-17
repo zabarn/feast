@@ -132,7 +132,6 @@ class MilvusOnlineStore(VectorOnlineStore):
                     if collection_available:
                         logger.info(f"Collection {table_to_keep.name} already exists.")
                     else:
-                        # TODO: Enable dynamic schema option
                         schema = self._convert_featureview_schema_to_milvus_readable(
                             table_to_keep.schema,
                             table_to_keep.vector_field,
