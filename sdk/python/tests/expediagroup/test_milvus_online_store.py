@@ -132,7 +132,9 @@ class TestMilvusOnlineStore:
             if utility.has_collection(self.unavailable_collection):
                 utility.drop_collection(self.unavailable_collection)
             # Closing the temporary collection to do this
-    
+
+        yield
+
     def create_n_customer_test_samples_milvus(self, n=10):
         # Utility method to create sample data
         return [
@@ -407,7 +409,7 @@ class TestMilvusOnlineStore:
             ]
         )
 
-        with PymilvusConnectionContext():
+        with MilvusConnectionManager(repo_config.online_store):
             # Create a collection
             collection = Collection(name=self.collection_to_write, schema=milvus_schema)
             # Drop all indexes if any exists
@@ -432,7 +434,7 @@ class TestMilvusOnlineStore:
             config=repo_config, table=vectorFeatureView, data=data, progress=None
         )
 
-        with PymilvusConnectionContext():
+        with MilvusConnectionManager(repo_config.online_store):
             collection = Collection(name=self.collection_to_write)
             progress = utility.index_building_progress(collection_name=collection.name)
             assert progress["total_rows"] == total_rows_to_write
