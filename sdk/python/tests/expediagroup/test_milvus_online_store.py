@@ -386,7 +386,7 @@ class TestMilvusOnlineStore:
         with MilvusConnectionManager(repo_config.online_store):
             assert len(utility.list_collections()) == 0
 
-    def test_milvus_online_write_batch(self, repo_config, caplog, milvus_online_setup):
+    def test_milvus_online_write_batch(self, repo_config, caplog):
 
         total_rows_to_write = 100
 
