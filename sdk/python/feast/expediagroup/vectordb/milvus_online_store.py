@@ -277,7 +277,7 @@ class MilvusOnlineStore(OnlineStore):
 
     def _convert_milvus_result_to_feast_type(
         self, milvus_result, collection, features_to_request
-    ) -> List[Dict[str, ValueProto]]:
+    ):
         """
         Convert Milvus result to Feast types.
 
@@ -291,11 +291,11 @@ class MilvusOnlineStore(OnlineStore):
         """
 
         # Here we are constructing the feature list to request from Milvus with their relevant types
-        features_with_types = [
-            (field.name, TypeConverter.milvus_to_feast_type(field.dtype))
-            for field in collection.schema.fields
-            if field.name in features_to_request
-        ]
+
+        features_with_types = list(tuple())
+        for field in collection.schema.fields:
+            if (field.name in features_to_request):
+                features_with_types.append((field.name, TypeConverter.milvus_to_feast_type(field.dtype)))
 
         feast_type_result = []
         value_type_actions = {
@@ -326,7 +326,6 @@ class MilvusOnlineStore(OnlineStore):
                 result_row[feature] = value_proto
             # Append result after conversion to Feast Type
             feast_type_result.append(result_row)
-
         return feast_type_result
 
     def _construct_milvus_query(self, entities) -> str:
