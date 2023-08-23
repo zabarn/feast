@@ -1,3 +1,4 @@
+import json
 import logging
 from datetime import datetime
 from enum import Enum
@@ -13,10 +14,8 @@ from pymilvus import (
     connections,
     utility,
 )
-from pymilvus.client.types import IndexType as MilvusIndexType
-
+from pymilvus.client.types import IndexType
 from feast import Entity, FeatureView, RepoConfig
-from feast.expediagroup.vectordb.index_type import IndexType
 from feast.field import Field
 from feast.infra.online_stores.online_store import OnlineStore
 from feast.protos.feast.types.EntityKey_pb2 import EntityKey as EntityKeyProto
@@ -167,11 +166,20 @@ class MilvusOnlineStore(OnlineStore):
                     if collection_available:
                         logger.info(f"Collection {table_to_keep.name} already exists.")
                     else:
-                        schema = self._convert_featureview_schema_to_milvus_readable(
+                        (
+                            schema,
+                            indexes,
+                        ) = self._convert_featureview_schema_to_milvus_readable(
                             table_to_keep.schema,
                         )
 
                         collection = Collection(name=table_to_keep.name, schema=schema)
+                        logging.info("COLLECTION NAME")
+                        logging.info(collection)
+
+                        for field_name, index_params in indexes.items():
+                            collection.create_index(field_name, index_params)
+
                         logger.info(f"Collection name is {collection.name}")
                         logger.info(
                             f"Collection {table_to_keep.name} has been created successfully."
@@ -200,11 +208,17 @@ class MilvusOnlineStore(OnlineStore):
         tables: Sequence[FeatureView],
         entities: Sequence[Entity],
     ):
-        pass
+        with MilvusConnectionManager(config.online_store):
+
+            for table in tables:
+                collection_name = table.name
+                if utility.has_collection(collection_name):
+                    logger.info(f"Dropping collection: {collection_name}")
+                    utility.drop_collection(collection_name)
 
     def _convert_featureview_schema_to_milvus_readable(
         self, feast_schema: List[Field]
-    ) -> CollectionSchema:
+    ) -> Tuple[CollectionSchema, Dict]:
         """
         Converting a schema understood by Feast to a schema that is readable by Milvus so that it
         can be used when a collection is created in Milvus.
@@ -214,18 +228,18 @@ class MilvusOnlineStore(OnlineStore):
 
         Returns:
         (CollectionSchema): Schema readable by Milvus.
+        (Dict): A dictionary of indexes to be created with the key as the vector field name and the value as the parameters
 
         """
         boolean_mapping_from_string = {"True": True, "False": False}
         field_list = []
+        indexes = {}
+
         for field in feast_schema:
+
             field_name = field.name
             data_type = self._feast_to_milvus_data_type(field.dtype)
-            is_vector = False
             dimensions = 0
-
-            if self._data_type_is_supported_vector(data_type):
-                is_vector = True
 
             if field.tags:
                 description = field.tags.get("description", " ")
@@ -233,19 +247,27 @@ class MilvusOnlineStore(OnlineStore):
                     field.tags.get("is_primary", "False")
                 )
 
-                if is_vector:
+                if self._data_type_is_supported_vector(data_type) and field.tags.get(
+                    "index_type"
+                ):
                     dimensions = int(field.tags.get("dimensions", "0"))
 
                     if dimensions <= 0 or dimensions >= 32768:
-                        logger.error(
-                            f"invalid value for dimensions: {dimensions} set for field: {field_name}"
-                        )
+                        msg = f"invalid value for dimensions: {dimensions} set for field: {field_name}"
+                        logger.error(msg)
+                        raise ValueError(msg)
 
-                    index_type_from_tag = field.tags.get("index_type")
-                    index_type = IndexType(index_type_from_tag).milvus_index_type
-
-                    if index_type == MilvusIndexType.INVALID:
-                        logger.error(f"invalid index type: {index_type_from_tag}")
+                    else:
+                        try:
+                            index_params = self._create_index_params(
+                                field.tags, data_type
+                            )
+                            indexes[field_name] = index_params
+                        except ValueError as e:
+                            logger.error(
+                                f"Could not create index for field: {field_name}.", e
+                            )
+                            raise e
 
             # Appending the above converted values to construct a FieldSchema
             field_list.append(
@@ -258,7 +280,7 @@ class MilvusOnlineStore(OnlineStore):
                 )
             )
         # Returning a CollectionSchema which is a list of type FieldSchema.
-        return CollectionSchema(field_list)
+        return CollectionSchema(field_list), indexes
 
     def _data_type_is_supported_vector(self, data_type: DataType) -> bool:
         """
@@ -305,6 +327,54 @@ class MilvusOnlineStore(OnlineStore):
 
         transformed_data = [list(item) for item in zip(*milvus_data)]
         return transformed_data
+
+    def _create_index_params(self, tags: Dict[str, str], data_type: DataType):
+        """
+        Parses the tags to generate the index_params needed to create the specified index
+
+        Parameters:
+            index_type (MilvusIndexType): the index type to be created
+            tags (Dict): the tags associated with the field
+            data_type (DateType): the data type of the field
+
+        Returns:
+            (Dict): a dictionary formatted for the create_index params argument
+        """
+        valid_indexes = IndexType._member_map_
+        index_type_tag = tags.get("index_type", "").upper().strip("BIN_")
+
+        index_type = (
+            IndexType[index_type_tag]
+            if index_type_tag in valid_indexes
+            else IndexType.INVALID
+        )
+        if index_type == IndexType.INVALID:
+            raise ValueError(f"Invalid index type: {index_type}")
+
+        if data_type is DataType.BINARY_VECTOR:
+            if index_type in [
+                IndexType.IVFLAT,
+                IndexType.FLAT,
+            ]:
+                index_type_name = "BIN_" + index_type.name
+            else:
+                raise ValueError(f"invalid index type for binary vector: {index_type}")
+        else:
+            index_type_name = index_type.name
+
+        params = {}
+        if "index_params" in tags:
+            params = json.loads(tags["index_params"])
+
+        metric_type = "L2"
+        if "metric_type" in tags:
+            metric_type = tags["metric_type"]
+
+        return {
+            "metric_type": metric_type,
+            "index_type": index_type_name,
+            "params": params,
+        }
 
     def _convert_milvus_result_to_feast_type(
         self, milvus_result, collection, features_to_request
