@@ -220,7 +220,7 @@ class MilvusOnlineStore(OnlineStore):
         field_list = []
         for field in feast_schema:
             field_name = field.name
-            data_type = self.feast_to_milvus_data_type(field.dtype)
+            data_type = self._feast_to_milvus_data_type(field.dtype)
             is_vector = False
             dimensions = 0
 
@@ -327,7 +327,7 @@ class MilvusOnlineStore(OnlineStore):
         for field in collection.schema.fields:
             if field.name in features_to_request:
                 features_with_types.append(
-                    (field.name, self.milvus_to_feast_type(field.dtype))
+                    (field.name, self._milvus_to_feast_type(field.dtype))
                 )
 
         feast_type_result = []
@@ -389,12 +389,12 @@ class MilvusOnlineStore(OnlineStore):
 
         return milvus_query_expr
 
-    def feast_to_milvus_data_type(self, feast_type) -> DataType:
+    def _feast_to_milvus_data_type(self, feast_type) -> DataType:
         mapped = FeastType(feast_type).name
         milvus_type = MilvusType._member_map_[f"{mapped}"].value
         return milvus_type
 
-    def milvus_to_feast_type(self, milvus_type) -> FeastType:
+    def _milvus_to_feast_type(self, milvus_type) -> FeastType:
         mapped = MilvusType(milvus_type.value).name
         feast_type = FeastType._member_map_[f"{mapped}"].value
         return feast_type
