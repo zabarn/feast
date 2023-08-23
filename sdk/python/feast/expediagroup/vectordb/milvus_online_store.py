@@ -15,6 +15,7 @@ from pymilvus import (
     utility,
 )
 from pymilvus.client.types import IndexType
+
 from feast import Entity, FeatureView, RepoConfig
 from feast.field import Field
 from feast.infra.online_stores.online_store import OnlineStore
@@ -404,8 +405,12 @@ class MilvusOnlineStore(OnlineStore):
         value_type_actions = {
             "float_list_val": lambda val: ValueProto(float_list_val=FloatList(val=val)),
             "string_val": lambda val: ValueProto(string_val=val),
+            "int32_val": lambda val: ValueProto(int32_val=val),
             "int64_val": lambda val: ValueProto(int64_val=val),
             "double_val": lambda val: ValueProto(double_val=val),
+            "bool_val": lambda val: ValueProto(bool_val=val),
+            "float_val": lambda val: ValueProto(float_val=val),
+            "bytes_val": lambda val: ValueProto(bytes_val=val),
         }
         prefix = "valuetype."
 
@@ -454,7 +459,7 @@ class MilvusOnlineStore(OnlineStore):
                 value_to_search = getattr(value, val_type)
                 values_to_search.append(value_to_search)
 
-        # TODO: Enable multiple join key support. Currently only supporting a single primary key/ join key
+        # TODO: Enable multiple join key support. Currently only supporting a single primary key/ join key. This is a limitation in Feast.
         milvus_query_expr = f"{entity_join_key[0]} in {values_to_search}"
 
         return milvus_query_expr

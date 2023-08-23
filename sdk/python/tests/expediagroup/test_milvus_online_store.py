@@ -525,7 +525,6 @@ class TestMilvusOnlineStore:
             ]
         )
 
-        # Creating an end-to-end example with just using pymilvus to understand how it works
         with MilvusConnectionManager(repo_config.online_store):
             # Create a collection
             collection = Collection(name=self.collection_to_write, schema=schema)
@@ -559,7 +558,7 @@ class TestMilvusOnlineStore:
                     "description": "float32",
                     "dimensions": 2,
                     "index_type": "HNSW",
-                    "index_params": '{ "M": 32, "efConstruction": 256}'
+                    "index_params": '{ "M": 32, "efConstruction": 256}',
                 },
             ),
         ]
