@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime
+from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
@@ -16,16 +17,47 @@ from pymilvus.client.types import IndexType as MilvusIndexType
 
 from feast import Entity, FeatureView, RepoConfig
 from feast.expediagroup.vectordb.index_type import IndexType
-from feast.expediagroup.vectordb.utils.feast_milvus_type_conversion import TypeConverter
 from feast.field import Field
 from feast.infra.online_stores.online_store import OnlineStore
 from feast.protos.feast.types.EntityKey_pb2 import EntityKey as EntityKeyProto
 from feast.protos.feast.types.Value_pb2 import FloatList
 from feast.protos.feast.types.Value_pb2 import Value as ValueProto
 from feast.repo_config import FeastConfigBaseModel
+from feast.types import Array, Bytes, Float32, Float64, Int32, Int64, Invalid, String
 from feast.usage import log_exceptions_and_usage
 
 logger = logging.getLogger(__name__)
+
+
+class FeastType(Enum):
+    """
+    Mapping for converting Feast data type to a data type compatible wih Milvus.
+    """
+
+    INT32 = Int32
+    INT64 = Int64
+    FLOAT32 = Float32
+    FLOAT64 = Float64
+    STRING = String
+    VARCHAR = String
+    UNKNOWN = Invalid
+    FLOAT_VECTOR = Array(Float32)
+    BINARY_VECTOR = Array(Bytes)
+
+
+class MilvusType(Enum):
+    """
+    Mapping for converting Feast data type to a data type compatible wih Milvus.
+    """
+
+    INT32 = DataType.INT32
+    INT64 = DataType.INT64
+    FLOAT32 = DataType.FLOAT
+    FLOAT64 = DataType.DOUBLE
+    STRING = DataType.STRING
+    INVALID = DataType.UNKNOWN
+    FLOAT_VECTOR = DataType.FLOAT_VECTOR
+    BINARY_VECTOR = DataType.BINARY_VECTOR
 
 
 class MilvusOnlineStoreConfig(FeastConfigBaseModel):
@@ -188,8 +220,7 @@ class MilvusOnlineStore(OnlineStore):
         field_list = []
         for field in feast_schema:
             field_name = field.name
-            # data_type = self._feast_to_milvus_data_type(field.dtype)
-            data_type = TypeConverter.feast_to_milvus_data_type(field.dtype)
+            data_type = self.feast_to_milvus_data_type(field.dtype)
             is_vector = False
             dimensions = 0
 
@@ -294,8 +325,10 @@ class MilvusOnlineStore(OnlineStore):
 
         features_with_types = list(tuple())
         for field in collection.schema.fields:
-            if (field.name in features_to_request):
-                features_with_types.append((field.name, TypeConverter.milvus_to_feast_type(field.dtype)))
+            if field.name in features_to_request:
+                features_with_types.append(
+                    (field.name, self.milvus_to_feast_type(field.dtype))
+                )
 
         feast_type_result = []
         value_type_actions = {
@@ -355,3 +388,13 @@ class MilvusOnlineStore(OnlineStore):
         milvus_query_expr = f"{entity_join_key[0]} in {values_to_search}"
 
         return milvus_query_expr
+
+    def feast_to_milvus_data_type(self, feast_type) -> DataType:
+        mapped = FeastType(feast_type).name
+        milvus_type = MilvusType._member_map_[f"{mapped}"].value
+        return milvus_type
+
+    def milvus_to_feast_type(self, milvus_type) -> FeastType:
+        mapped = MilvusType(milvus_type.value).name
+        feast_type = FeastType._member_map_[f"{mapped}"].value
+        return feast_type
