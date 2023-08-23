@@ -1,10 +1,10 @@
 import json
 import logging
 from datetime import datetime
-from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
+from bidict import bidict
 from pydantic.typing import Literal
 from pymilvus import (
     Collection,
@@ -28,36 +28,18 @@ from feast.usage import log_exceptions_and_usage
 
 logger = logging.getLogger(__name__)
 
-
-class FeastType(Enum):
-    """
-    Mapping for converting Feast data type to a data type compatible wih Milvus.
-    """
-
-    INT32 = Int32
-    INT64 = Int64
-    FLOAT32 = Float32
-    FLOAT64 = Float64
-    STRING = String
-    VARCHAR = String
-    UNKNOWN = Invalid
-    FLOAT_VECTOR = Array(Float32)
-    BINARY_VECTOR = Array(Bytes)
-
-
-class MilvusType(Enum):
-    """
-    Mapping for converting Feast data type to a data type compatible wih Milvus.
-    """
-
-    INT32 = DataType.INT32
-    INT64 = DataType.INT64
-    FLOAT32 = DataType.FLOAT
-    FLOAT64 = DataType.DOUBLE
-    STRING = DataType.STRING
-    INVALID = DataType.UNKNOWN
-    FLOAT_VECTOR = DataType.FLOAT_VECTOR
-    BINARY_VECTOR = DataType.BINARY_VECTOR
+FEAST_MILVUS_CONV_DICT = bidict(
+    {
+        DataType.INT32: Int32,
+        DataType.INT64: Int64,
+        DataType.FLOAT: Float32,
+        DataType.DOUBLE: Float64,
+        DataType.STRING: String,
+        DataType.UNKNOWN: Invalid,
+        DataType.FLOAT_VECTOR: Array(Float32),
+        DataType.BINARY_VECTOR: Array(Bytes),
+    }
+)
 
 
 class MilvusOnlineStoreConfig(FeastConfigBaseModel):
@@ -175,8 +157,6 @@ class MilvusOnlineStore(OnlineStore):
                         )
 
                         collection = Collection(name=table_to_keep.name, schema=schema)
-                        logging.info("COLLECTION NAME")
-                        logging.info(collection)
 
                         for field_name, index_params in indexes.items():
                             collection.create_index(field_name, index_params)
@@ -239,7 +219,8 @@ class MilvusOnlineStore(OnlineStore):
         for field in feast_schema:
 
             field_name = field.name
-            data_type = self._feast_to_milvus_data_type(field.dtype)
+            data_type = FEAST_MILVUS_CONV_DICT.inverse[field.dtype]
+            logging.info(data_type)
             dimensions = 0
 
             if field.tags:
@@ -398,7 +379,7 @@ class MilvusOnlineStore(OnlineStore):
         for field in collection.schema.fields:
             if field.name in features_to_request:
                 features_with_types.append(
-                    (field.name, self._milvus_to_feast_type(field.dtype))
+                    (field.name, FEAST_MILVUS_CONV_DICT.get(field.dtype, None))
                 )
 
         feast_type_result = []
@@ -463,13 +444,3 @@ class MilvusOnlineStore(OnlineStore):
         milvus_query_expr = f"{entity_join_key[0]} in {values_to_search}"
 
         return milvus_query_expr
-
-    def _feast_to_milvus_data_type(self, feast_type) -> DataType:
-        mapped = FeastType(feast_type).name
-        milvus_type = MilvusType._member_map_[f"{mapped}"].value
-        return milvus_type
-
-    def _milvus_to_feast_type(self, milvus_type) -> FeastType:
-        mapped = MilvusType(milvus_type.value).name
-        feast_type = FeastType._member_map_[f"{mapped}"].value
-        return feast_type
