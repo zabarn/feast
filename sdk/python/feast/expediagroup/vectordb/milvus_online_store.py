@@ -28,7 +28,7 @@ from feast.usage import log_exceptions_and_usage
 
 logger = logging.getLogger(__name__)
 
-FEAST_MILVUS_CONV_DICT = bidict(
+TYPE_MAPPING = bidict(
     {
         DataType.INT32: Int32,
         DataType.INT64: Int64,
@@ -219,8 +219,7 @@ class MilvusOnlineStore(OnlineStore):
         for field in feast_schema:
 
             field_name = field.name
-            data_type = FEAST_MILVUS_CONV_DICT.inverse[field.dtype]
-            logging.info(data_type)
+            data_type = self._get_milvus_type(field.dtype)
             dimensions = 0
 
             if field.tags:
@@ -284,7 +283,7 @@ class MilvusOnlineStore(OnlineStore):
 
     def _format_data_for_milvus(self, feast_data):
         """
-        Data stored into Milvus takes the grouped representation approach where each feature value is grouped together:
+        Format Feast input for Milvus: Data stored into Milvus takes the grouped representation approach where each feature value is grouped together:
         [[1,2], [1,3]], [John, Lucy], [3,4]]
 
         Parameters:
@@ -297,14 +296,7 @@ class MilvusOnlineStore(OnlineStore):
 
         milvus_data = []
         for entity_key, values, timestamp, created_ts in feast_data:
-            feature = []
-            for feature_name, val in values.items():
-                val_type = val.WhichOneof("val")
-                value = getattr(val, val_type)
-                if val_type == "float_list_val":
-                    value = np.array(value.val)
-                # TODO: Check binary vector conversion
-                feature.append(value)
+            feature = self._process_values_for_milvus(values)
             milvus_data.append(feature)
 
         transformed_data = [list(item) for item in zip(*milvus_data)]
@@ -379,7 +371,7 @@ class MilvusOnlineStore(OnlineStore):
         for field in collection.schema.fields:
             if field.name in features_to_request:
                 features_with_types.append(
-                    (field.name, FEAST_MILVUS_CONV_DICT.get(field.dtype, None))
+                    (field.name, self._get_feast_type(field.dtype))
                 )
 
         feast_type_result = []
@@ -397,7 +389,7 @@ class MilvusOnlineStore(OnlineStore):
                     value_type_method = f"{feast_type.to_value_type()}_val".lower()
                     if value_type_method.startswith(prefix):
                         value_type_method = value_type_method[len(prefix) :]
-                    value_proto = self._extract_value_from_milvus(
+                    value_proto = self._create_value_proto(
                         value_proto, feature_value, value_type_method
                     )
                 result_row[feature] = value_proto
@@ -405,17 +397,17 @@ class MilvusOnlineStore(OnlineStore):
             feast_type_result.append(result_row)
         return feast_type_result
 
-    def _extract_value_from_milvus(self, val_proto, feature_val, value_type):
+    def _create_value_proto(self, val_proto, feature_val, value_type) -> ValueProto:
         """
         Construct Value Proto so that Feast can interpret Milvus results
 
         Parameters:
         val_proto (ValueProto): Initialised Value Proto
         feature_val (Union[list, int, str, double, float, bool, bytes]): A row/ an item in the result that Milvus returns.
-        value_type (Str):
+        value_type (Str): Feast Value type; example: int64_val, float_val, etc.
 
         Returns:
-        val_proto (List[ValueProto]): Constructed result that Feast can understand.
+        val_proto (ValueProto): Constructed result that Feast can understand.
         """
 
         if value_type == "float_list_val":
@@ -443,11 +435,55 @@ class MilvusOnlineStore(OnlineStore):
             for key in entity.join_keys:
                 entity_join_key.append(key)
             for value in entity.entity_values:
-                val_type = value.WhichOneof("val")
-                value_to_search = getattr(value, val_type)
+                value_to_search = self._get_value_to_search_in_milvus(value)
                 values_to_search.append(value_to_search)
 
         # TODO: Enable multiple join key support. Currently only supporting a single primary key/ join key. This is a limitation in Feast.
         milvus_query_expr = f"{entity_join_key[0]} in {values_to_search}"
 
         return milvus_query_expr
+
+    def _process_values_for_milvus(self, values) -> List:
+        """
+        Process values to prepare them for using in Milvus.
+
+        Parameters:
+        values: (Dict[str, ValueProto]): Dictionary of values from Feast data.
+
+        Returns:
+        (List): Processed feature values ready for storing in Milvus.
+        """
+        feature = []
+        for feature_name, val in values.items():
+            value = self._get_value_to_search_in_milvus(val)
+            feature.append(value)
+        return feature
+
+    def _get_value_to_search_in_milvus(self, value) -> Any:
+        """
+        Process a value to prepare it for searching in Milvus.
+
+        Parameters:
+        value (ValueProto): A value from Feast data.
+
+        Returns:
+        value (Any): Processed value ready for Milvus searching.
+        """
+        val_type = value.WhichOneof("val")
+        if val_type == "float_list_val":
+            value = np.array(value.float_list_val.val)
+        else:
+            value = getattr(value, val_type)
+        return value
+
+    def _get_milvus_type(self, feast_type) -> DataType:
+        """
+        Convert Feast type to Milvus type using the TYPE_MAPPING bidict.
+        """
+        return TYPE_MAPPING.inverse.get(feast_type, None)
+
+    def _get_feast_type(self, milvus_type) -> object:
+        """
+        Convert Milvus type to Feast type using the TYPE_MAPPING bidict.
+        """
+        return TYPE_MAPPING.get(milvus_type, None)
