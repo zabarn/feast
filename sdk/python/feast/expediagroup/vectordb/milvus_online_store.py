@@ -383,16 +383,6 @@ class MilvusOnlineStore(OnlineStore):
                 )
 
         feast_type_result = []
-        value_type_actions = {
-            "float_list_val": lambda val: ValueProto(float_list_val=FloatList(val=val)),
-            "string_val": lambda val: ValueProto(string_val=val),
-            "int32_val": lambda val: ValueProto(int32_val=val),
-            "int64_val": lambda val: ValueProto(int64_val=val),
-            "double_val": lambda val: ValueProto(double_val=val),
-            "bool_val": lambda val: ValueProto(bool_val=val),
-            "float_val": lambda val: ValueProto(float_val=val),
-            "bytes_val": lambda val: ValueProto(bytes_val=val),
-        }
         prefix = "valuetype."
 
         for row in milvus_result:
@@ -407,15 +397,32 @@ class MilvusOnlineStore(OnlineStore):
                     value_type_method = f"{feast_type.to_value_type()}_val".lower()
                     if value_type_method.startswith(prefix):
                         value_type_method = value_type_method[len(prefix) :]
-                    # Construct the appropriate ValueProto instance.
-                    value_proto_constructor = value_type_actions.get(value_type_method)
-                    if value_proto_constructor:
-                        value_proto = value_proto_constructor(feature_value)
-
+                    value_proto = self._extract_value_from_milvus(
+                        value_proto, feature_value, value_type_method
+                    )
                 result_row[feature] = value_proto
             # Append result after conversion to Feast Type
             feast_type_result.append(result_row)
         return feast_type_result
+
+    def _extract_value_from_milvus(self, val_proto, feature_val, value_type):
+        """
+        Construct Value Proto so that Feast can interpret Milvus results
+
+        Parameters:
+        val_proto (ValueProto): Initialised Value Proto
+        feature_val (Union[list, int, str, double, float, bool, bytes]): A row/ an item in the result that Milvus returns.
+        value_type (Str):
+
+        Returns:
+        val_proto (List[ValueProto]): Constructed result that Feast can understand.
+        """
+
+        if value_type == "float_list_val":
+            val_proto = ValueProto(float_list_val=FloatList(val=feature_val))
+        else:
+            setattr(val_proto, value_type, feature_val)
+        return val_proto
 
     def _construct_milvus_query(self, entities) -> str:
         """
