@@ -268,10 +268,10 @@ class MilvusOnlineStore(OnlineStore):
         whether the Milvus data type is a supported vector in this implementation
 
         Parameters:
-            data_type (DataType): data type of field in schema
+        data_type (DataType): data type of field in schema
 
         Returns:
-            bool: True is supported, False if not
+        bool: True is supported, False if not
         """
         if data_type in [
             DataType.BINARY_VECTOR,
@@ -307,12 +307,12 @@ class MilvusOnlineStore(OnlineStore):
         Parses the tags to generate the index_params needed to create the specified index
 
         Parameters:
-            index_type (MilvusIndexType): the index type to be created
-            tags (Dict): the tags associated with the field
-            data_type (DateType): the data type of the field
+        index_type (MilvusIndexType): the index type to be created
+        tags (Dict): the tags associated with the field
+        data_type (DateType): the data type of the field
 
         Returns:
-            (Dict): a dictionary formatted for the create_index params argument
+        (Dict): a dictionary formatted for the create_index params argument
         """
         valid_indexes = IndexType._member_map_
         index_type_tag = tags.get("index_type", "").upper().strip("BIN_")
