@@ -540,13 +540,12 @@ class TestMilvusOnlineStore:
             Field(
                 name="film_id",
                 dtype=Int64,
-                tags={"is_primary": "True", "description": "int64"},
+                tags={"description": "int64"},
             ),
             Field(
                 name="film_date",
                 dtype=Int64,
                 tags={
-                    "is_primary": "False",
                     "description": "Int64",
                 },
             ),
@@ -554,7 +553,6 @@ class TestMilvusOnlineStore:
                 name="films",
                 dtype=Array(Float32),
                 tags={
-                    "is_primary": "False",
                     "description": "float32",
                     "dimensions": 2,
                     "index_type": "HNSW",
