@@ -8,9 +8,6 @@ from feast.infra.offline_stores.bigquery_source import BigQuerySource
 from feast.infra.offline_stores.contrib.athena_offline_store.athena_source import (
     AthenaSource,
 )
-from feast.infra.offline_stores.contrib.spark_offline_store.spark import (
-    SparkOfflineStoreConfig,
-)
 from feast.infra.offline_stores.contrib.spark_offline_store.spark_source import (
     SparkSource,
 )
@@ -27,7 +24,7 @@ from .feature_store import FeatureStore
 from .feature_view import FeatureView
 from .field import Field
 from .on_demand_feature_view import OnDemandFeatureView
-from .repo_config import RegistryConfig, RepoConfig
+from .repo_config import RepoConfig
 from .request_feature_view import RequestFeatureView
 from .stream_feature_view import StreamFeatureView
 from .value_type import ValueType
@@ -61,6 +58,4 @@ __all__ = [
     "RequestSource",
     "AthenaSource",
     "SparkSource",
-    "RegistryConfig",
-    "SparkOfflineStoreConfig",
 ]

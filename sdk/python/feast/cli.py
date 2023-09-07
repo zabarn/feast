@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import importlib.metadata
 import json
 import logging
 from datetime import datetime
@@ -18,7 +19,6 @@ from pathlib import Path
 from typing import List, Optional
 
 import click
-import pkg_resources
 import yaml
 from colorama import Fore, Style
 from dateutil import parser
@@ -121,7 +121,7 @@ def version():
     """
     Display Feast SDK version
     """
-    print(f'Feast SDK Version: "{pkg_resources.get_distribution("eg-feast")}"')
+    print(f'Feast SDK Version: "{importlib.metadata.distribution("eg-feast").version}"')
 
 
 @cli.command()
@@ -216,7 +216,11 @@ def data_source_describe(ctx: click.Context, name: str):
         print(e)
         exit(1)
 
-    print(yaml.dump(yaml.safe_load(str(data_source)), default_flow_style=False, sort_keys=False))
+    print(
+        yaml.dump(
+            yaml.safe_load(str(data_source)), default_flow_style=False, sort_keys=False
+        )
+    )
 
 
 @data_sources_cmd.command(name="list")
@@ -258,7 +262,11 @@ def entity_describe(ctx: click.Context, name: str):
         print(e)
         exit(1)
 
-    print(yaml.dump(yaml.safe_load(str(entity)), default_flow_style=False, sort_keys=False))
+    print(
+        yaml.dump(
+            yaml.safe_load(str(entity)), default_flow_style=False, sort_keys=False
+        )
+    )
 
 
 @entities_cmd.command(name="list")
@@ -353,7 +361,11 @@ def feature_view_describe(ctx: click.Context, name: str):
         print(e)
         exit(1)
 
-    print(yaml.dump(yaml.safe_load(str(feature_view)), default_flow_style=False, sort_keys=False))
+    print(
+        yaml.dump(
+            yaml.safe_load(str(feature_view)), default_flow_style=False, sort_keys=False
+        )
+    )
 
 
 @feature_views_cmd.command(name="list")
@@ -517,7 +529,9 @@ def registry_dump_command(ctx: click.Context):
     multiple=True,
 )
 @click.pass_context
-def materialize_command(ctx: click.Context, start_ts: str, end_ts: str, views: List[str]):
+def materialize_command(
+    ctx: click.Context, start_ts: str, end_ts: str, views: List[str]
+):
     """
     Run a (non-incremental) materialization job to ingest data into the online store. Feast
     will read all data between START_TS and END_TS from the offline store and write it to the
@@ -562,7 +576,9 @@ def materialize_incremental_command(ctx: click.Context, end_ts: str, views: List
 
 @cli.command("init")
 @click.argument("PROJECT_DIRECTORY", required=False)
-@click.option("--minimal", "-m", is_flag=True, help="Create an empty project repository")
+@click.option(
+    "--minimal", "-m", is_flag=True, help="Create an empty project repository"
+)
 @click.option(
     "--template",
     "-t",
@@ -648,6 +664,12 @@ def init_command(project_directory, minimal: bool, template: str):
     show_default=True,
     help="Timeout for keep alive",
 )
+@click.option(
+    "--go",
+    is_flag=True,
+    show_default=True,
+    help="Use Go to serve",
+)
 @click.pass_context
 def serve_command(
     ctx: click.Context,
@@ -658,9 +680,14 @@ def serve_command(
     no_feature_log: bool,
     workers: int,
     keep_alive_timeout: int,
+    go: bool,
 ):
     """Start a feature server locally on a given port."""
     store = create_feature_store(ctx)
+
+    if go:
+        # Turn on Go feature retrieval.
+        store.config.go_feature_serving = True
 
     store.serve(
         host=host,
@@ -741,7 +768,9 @@ def validate(
 
     errors = [e.to_dict() for e in result.report.errors]
     formatted_json = json.dumps(errors, indent=4)
-    colorful_json = highlight(formatted_json, lexers.JsonLexer(), formatters.TerminalFormatter())
+    colorful_json = highlight(
+        formatted_json, lexers.JsonLexer(), formatters.TerminalFormatter()
+    )
     print(f"{Style.BRIGHT + Fore.RED}Validation failed!{Style.RESET_ALL}")
     print(colorful_json)
     exit(1)
