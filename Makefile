@@ -499,7 +499,3 @@ build-helm-docs:
 # Note: requires node and yarn to be installed
 build-ui:
 	cd $(ROOT_DIR)/sdk/python/feast/ui && yarn upgrade @feast-dev/feast-ui --latest && yarn install && npm run build --omit=dev
-
-# compile-protos-go: install-go-proto-dependencies
-# 	mkdir -p ./go/protos
-# 	find ./protos -type f -name "*.proto" -exec protoc -I ./protos --go_opt=module=github.com/feast-dev/feast/go/protos --go_out=./go/protos/ --go-grpc_opt=module=github.com/feast-dev/feast/go/protos --go-grpc_out=./go/protos/ {} \;
