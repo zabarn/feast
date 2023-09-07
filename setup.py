@@ -147,6 +147,7 @@ HAZELCAST_REQUIRED = [
     "hazelcast-python-client>=5.1",
 ]
 
+
 MILVUS_REQUIRED = ["pymilvus==2.2.14", "bidict==0.22.1"]
 
 CI_REQUIRED = (
