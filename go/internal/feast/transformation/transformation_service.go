@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/feast-dev/feast/go/internal/feast/registry"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"strings"
 
@@ -14,50 +15,49 @@ import (
 	"github.com/feast-dev/feast/go/internal/feast/model"
 	"github.com/feast-dev/feast/go/internal/feast/onlineserving"
 	"github.com/feast-dev/feast/go/protos/feast/serving"
-	prototypes "github.com/feast-dev/feast/go/protos/feast/types"
-	"github.com/feast-dev/feast/go/types"
 	"google.golang.org/grpc"
 	"io"
 )
 
-type grpcTransformationService struct {
-	endpoint string
-	project  string
+type GrpcTransformationService struct {
+	project string
+	conn *grpc.ClientConn
+	client *serving.TransformationServiceClient
 }
 
-func (s *grpcTransformationService) GetTransformation(
+func NewGrpcTransformationService(config *registry.RepoConfig, endpoint string) (*GrpcTransformationService, error) {
+	opts := make([]grpc.DialOption, 0)
+	opts = append(opts, grpc.WithDefaultCallOptions())
+
+	conn, err := grpc.Dial(endpoint, opts...)
+	if err != nil {
+		return nil, err
+	}
+	client := serving.NewTransformationServiceClient(conn)
+	return &GrpcTransformationService{ config.Project, conn, &client }, nil
+}
+
+func (s *GrpcTransformationService) Close() error {
+	return s.conn.Close()
+}
+
+func (s *GrpcTransformationService) GetTransformation(
 	ctx context.Context,
 	featureView *model.OnDemandFeatureView,
-	requestData map[string]*prototypes.RepeatedValue,
-	entityRows map[string]*prototypes.RepeatedValue,
-	features []*onlineserving.FeatureVector,
+	retrievedFeatures map[string]arrow.Array,
+	requestContext map[string]arrow.Array,
 	numRows int,
 	fullFeatureNames bool,
 ) ([]*onlineserving.FeatureVector, error) {
 	var err error
-	arrowMemory := memory.NewGoAllocator()
 
 	inputFields := make([]arrow.Field, 0)
 	inputColumns := make([]arrow.Array, 0)
-	for _, vector := range features {
-		inputFields = append(inputFields, arrow.Field{Name: vector.Name, Type: vector.Values.DataType()})
-		inputColumns = append(inputColumns, vector.Values)
-	}
-
-	for name, values := range requestData {
-		arr, err := types.ProtoValuesToArrowArray(values.Val, arrowMemory, numRows)
-		if err != nil {
-			return nil, err
-		}
+	for name, arr := range retrievedFeatures {
 		inputFields = append(inputFields, arrow.Field{Name: name, Type: arr.DataType()})
 		inputColumns = append(inputColumns, arr)
 	}
-
-	for name, values := range entityRows {
-		arr, err := types.ProtoValuesToArrowArray(values.Val, arrowMemory, numRows)
-		if err != nil {
-			return nil, err
-		}
+	for name, arr := range requestContext {
 		inputFields = append(inputFields, arrow.Field{Name: name, Type: arr.DataType()})
 		inputColumns = append(inputColumns, arr)
 	}
@@ -83,17 +83,7 @@ func (s *grpcTransformationService) GetTransformation(
 		TransformationInput:     &transformationInput,
 	}
 
-	opts := make([]grpc.DialOption, 0)
-	opts = append(opts, grpc.WithDefaultCallOptions())
-
-	conn, err := grpc.Dial(s.endpoint, opts...)
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Close()
-	client := serving.NewTransformationServiceClient(conn)
-
-	res, err := client.TransformFeatures(ctx, &req)
+	res, err := (*s.client).TransformFeatures(ctx, &req)
 	if err != nil {
 		return nil, err
 	}

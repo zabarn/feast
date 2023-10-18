@@ -20,6 +20,7 @@ type FeatureStore struct {
 	registry               *registry.Registry
 	onlineStore            onlinestore.OnlineStore
 	transformationCallback transformation.TransformationCallback
+	transformationService  *transformation.GrpcTransformationService
 }
 
 // A Features struct specifies a list of features to be retrieved from the online store. These features
@@ -54,12 +55,15 @@ func NewFeatureStore(config *registry.RepoConfig, callback transformation.Transf
 	if err != nil {
 		return nil, err
 	}
+	endpoint := "localhost:port" // TODO: replace with a config or real value
+	transformationService, _ := transformation.NewGrpcTransformationService(config, endpoint)
 
 	return &FeatureStore{
 		config:                 config,
 		registry:               registry,
 		onlineStore:            onlineStore,
 		transformationCallback: callback,
+		transformationService:  transformationService,
 	}, nil
 }
 
@@ -116,7 +120,7 @@ func (fs *FeatureStore) GetOnlineFeatures(
 	}
 
 	result := make([]*onlineserving.FeatureVector, 0)
-	arrowMemory := memory.NewCgoArrowAllocator()
+	arrowMemory := memory.NewGoAllocator()
 	featureViews := make([]*model.FeatureView, len(requestedFeatureViews))
 	index := 0
 	for _, featuresAndView := range requestedFeatureViews {
@@ -164,13 +168,15 @@ func (fs *FeatureStore) GetOnlineFeatures(
 		result = append(result, vectors...)
 	}
 
-	if fs.transformationCallback != nil {
+	if fs.transformationCallback != nil || fs.transformationService != nil {
 		onDemandFeatures, err := transformation.AugmentResponseWithOnDemandTransforms(
+			ctx,
 			requestedOnDemandFeatureViews,
 			requestData,
 			joinKeyToEntityValues,
 			result,
 			fs.transformationCallback,
+			fs.transformationService,
 			arrowMemory,
 			numRows,
 			fullFeatureNames,
