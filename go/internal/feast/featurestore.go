@@ -55,7 +55,7 @@ func NewFeatureStore(config *registry.RepoConfig, callback transformation.Transf
 	if err != nil {
 		return nil, err
 	}
-	endpoint := "localhost:port" // TODO: replace with a config or real value
+  endpoint := "http://odfv-deployment-transformations.unified-feature-store.svc.cluster.local:8080" // TODO: replace with a config or real value
 	transformationService, _ := transformation.NewGrpcTransformationService(config, endpoint)
 
 	return &FeatureStore{
