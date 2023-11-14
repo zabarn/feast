@@ -1,10 +1,13 @@
 import logging
 import sys
 from concurrent import futures
+import threading
 
 import grpc
 import pyarrow as pa
 from grpc_reflection.v1alpha import reflection
+from fastapi import FastAPI, HTTPException, Request, Response, status
+import gunicorn.app.base
 
 from feast.errors import OnDemandFeatureViewNotFoundException
 from feast.feature_store import FeatureStore
@@ -22,6 +25,15 @@ from feast.protos.feast.serving.TransformationService_pb2_grpc import (
 from feast.version import get_version
 
 log = logging.getLogger(__name__)
+
+def get_health_check_app():
+    app = FastAPI()
+
+    @app.get("/health")
+    def health():
+        return Response(status_code=status.HTTP_200_OK)
+
+    return app
 
 
 class TransformationServer(TransformationServiceServicer):
@@ -59,7 +71,33 @@ class TransformationServer(TransformationServiceServicer):
         return TransformFeaturesResponse(
             transformation_output=ValueType(arrow_value=buf)
         )
+class FeastTransformationServeApplication(gunicorn.app.base.BaseApplication):
+    def __init__(self, **options):
+        self._app = get_health_check_app()
+        self._options = options
+        super().__init__()
 
+    def load_config(self):
+        for key, value in self._options.items():
+            if key.lower() in self.cfg.settings and value is not None:
+                self.cfg.set(key.lower(), value)
+
+        self.cfg.set("worker_class", "uvicorn.workers.UvicornWorker")
+
+    def load(self):
+        return self._app
+
+def _start_server(server):
+    server_thread = threading.Thread(target=_run_server, args=[server])
+    server_thread.daemon = True
+    server_thread.start()
+
+def _run_server(server):
+    try:
+        server.start()
+        server.wait_for_termination()
+    except Exception as e:
+        print(e)
 
 def start_server(store: FeatureStore, port: int):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
@@ -70,5 +108,5 @@ def start_server(store: FeatureStore, port: int):
     )
     reflection.enable_server_reflection(service_names_available_for_reflection, server)
     server.add_insecure_port(f"[::]:{port}")
-    server.start()
-    server.wait_for_termination()
+    _start_server(server)
+    FeastTransformationServeApplication().run()
