@@ -112,4 +112,3 @@ def start_server(store: FeatureStore, port: int):
     server_thread = _start_server(server)
     FeastTransformationServeApplication().run()
     server_thread.join()
-
