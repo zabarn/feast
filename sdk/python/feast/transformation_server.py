@@ -6,7 +6,7 @@ import threading
 import grpc
 import pyarrow as pa
 from grpc_reflection.v1alpha import reflection
-from fastapi import FastAPI, HTTPException, Request, Response, status
+from fastapi import FastAPI, Response, status
 import gunicorn.app.base
 
 from feast.errors import OnDemandFeatureViewNotFoundException
@@ -91,6 +91,7 @@ def _start_server(server):
     server_thread = threading.Thread(target=_run_server, args=[server])
     server_thread.daemon = True
     server_thread.start()
+    return server_thread
 
 def _run_server(server):
     try:
@@ -108,5 +109,7 @@ def start_server(store: FeatureStore, port: int):
     )
     reflection.enable_server_reflection(service_names_available_for_reflection, server)
     server.add_insecure_port(f"[::]:{port}")
-    _start_server(server)
+    server_thread = _start_server(server)
     FeastTransformationServeApplication().run()
+    server_thread.join()
+
