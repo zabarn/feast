@@ -249,7 +249,7 @@ if shutil.which("git"):
 else:
     use_scm_version = None
 
-PROTO_SUBDIRS = ["core", "serving", "types", "storage"]
+PROTO_SUBDIRS = ["core", "serving", "types", "storage", "third_party/grpc/health/v1"]
 PYTHON_CODE_PREFIX = "sdk/python"
 
 

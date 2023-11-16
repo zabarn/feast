@@ -11,27 +11,37 @@ from feast.feature_store import FeatureStore
 from feast.protos.feast.serving.TransformationService_pb2 import (
     DESCRIPTOR,
     TRANSFORMATION_SERVICE_TYPE_PYTHON,
-    SERVING,
     GetTransformationServiceInfoResponse,
     TransformFeaturesResponse,
-    HealthCheckResponse,
     ValueType,
 )
 from feast.protos.feast.serving.TransformationService_pb2_grpc import (
     TransformationServiceServicer,
     add_TransformationServiceServicer_to_server,
 )
+from feast.protos.feast.third_party.grpc.health.v1.HealthService_pb2 import (
+    SERVING,
+    HealthCheckResponse,
+)
+from feast.protos.feast.third_party.grpc.health.v1.HealthService_pb2_grpc import (
+    HealthServicer,
+    add_HealthServicer_to_server,
+)
 from feast.version import get_version
 
 log = logging.getLogger(__name__)
+
+class HealthServer(HealthServicer):
+    def __init__(self) -> None:
+        super().__init__()
+
+    def Health(self, request, context):
+        return HealthCheckResponse(status=SERVING)
 
 class TransformationServer(TransformationServiceServicer):
     def __init__(self, fs: FeatureStore) -> None:
         super().__init__()
         self.fs = fs
-
-    def Health(self, request, context):
-        return HealthCheckResponse(status=SERVING)
 
     def GetTransformationServiceInfo(self, request, context):
         response = GetTransformationServiceInfoResponse(
@@ -67,6 +77,7 @@ class TransformationServer(TransformationServiceServicer):
 def start_server(store: FeatureStore, port: int):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     add_TransformationServiceServicer_to_server(TransformationServer(store), server)
+    add_HealthServicer_to_server(HealthServer(), server)
     service_names_available_for_reflection = (
         DESCRIPTOR.services_by_name["TransformationService"].full_name,
         reflection.SERVICE_NAME,
