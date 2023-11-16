@@ -35,7 +35,7 @@ class HealthServer(HealthServicer):
     def __init__(self) -> None:
         super().__init__()
 
-    def Health(self, request, context):
+    def Check(self, request, context):
         return HealthCheckResponse(status=SERVING)
 
 class TransformationServer(TransformationServiceServicer):
