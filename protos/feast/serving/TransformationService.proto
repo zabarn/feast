@@ -26,6 +26,8 @@ service TransformationService {
     rpc GetTransformationServiceInfo (GetTransformationServiceInfoRequest) returns (GetTransformationServiceInfoResponse);
 
     rpc TransformFeatures (TransformFeaturesRequest) returns (TransformFeaturesResponse);
+
+    rpc Health (HealthCheckRequest) returns (HealthCheckResponse);
 }
 
 message ValueType {
@@ -64,4 +66,18 @@ enum TransformationServiceType {
     TRANSFORMATION_SERVICE_TYPE_PYTHON = 1;
 
     TRANSFORMATION_SERVICE_TYPE_CUSTOM = 100;
+}
+
+enum ServingStatus {
+  UNKNOWN = 0;
+  SERVING = 1;
+  NOT_SERVING = 2;
+}
+
+message HealthCheckRequest {
+  string service = 1;
+}
+
+message HealthCheckResponse {
+  ServingStatus status = 1;
 }
