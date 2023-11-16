@@ -14,7 +14,7 @@ from feast.protos.feast.serving.TransformationService_pb2 import (
     SERVING,
     GetTransformationServiceInfoResponse,
     TransformFeaturesResponse,
-    HelathCheckResponse,
+    HealthCheckResponse,
     ValueType,
 )
 from feast.protos.feast.serving.TransformationService_pb2_grpc import (

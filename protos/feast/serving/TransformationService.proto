@@ -38,6 +38,10 @@ message ValueType {
     }
 }
 
+message HealthCheckRequest {
+  string service = 1;
+}
+
 message GetTransformationServiceInfoRequest {}
 
 message GetTransformationServiceInfoResponse {
@@ -72,10 +76,6 @@ enum ServingStatus {
   UNKNOWN = 0;
   SERVING = 1;
   NOT_SERVING = 2;
-}
-
-message HealthCheckRequest {
-  string service = 1;
 }
 
 message HealthCheckResponse {
