@@ -317,6 +317,7 @@ class BuildPythonProtosCommand(Command):
 
         for path in Path(self.python_folder).rglob("*.py"):
             for folder in self.sub_folders:
+                folder = folder.replace("/", ".")
                 # Read in the file
                 with open(path, "r") as file:
                     filedata = file.read()

@@ -40,7 +40,6 @@ class HealthServer(HealthServicer):
         response = HealthCheckResponse(status=ServingStatus.SERVING)
         return response
 
-
 class TransformationServer(TransformationServiceServicer):
     def __init__(self, fs: FeatureStore) -> None:
         super().__init__()
