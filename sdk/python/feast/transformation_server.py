@@ -21,14 +21,6 @@ from feast.protos.feast.serving.TransformationService_pb2_grpc import (
     TransformationServiceServicer,
     add_TransformationServiceServicer_to_server,
 )
-# from feast.protos.feast.third_party.grpc.health.v1.HealthService_pb2 import (
-#     SERVING,
-#     HealthCheckResponse,
-# )
-# from feast.protos.feast.third_party.grpc.health.v1.HealthService_pb2_grpc import (
-#     HealthServicer,
-#     add_HealthServicer_to_server,
-# )
 from feast.version import get_version
 
 log = logging.getLogger(__name__)
@@ -70,10 +62,15 @@ class TransformationServer(TransformationServiceServicer):
             transformation_output=ValueType(arrow_value=buf)
         )
 
+
 def start_server(store: FeatureStore, port: int):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     add_TransformationServiceServicer_to_server(TransformationServer(store), server)
-    health_pb2_grpc.add_HealthServicer_to_server(health.HealthServicer(), server)
+
+    # Add health check service
+    health_servicer = health.HealthServicer()
+    health_pb2_grpc.add_HealthServicer_to_server(health_servicer, server)
+
     service_names_available_for_reflection = (
         DESCRIPTOR.services_by_name["TransformationService"].full_name,
         reflection.SERVICE_NAME,
