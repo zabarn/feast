@@ -167,6 +167,7 @@ CI_REQUIRED = (
         "isort>=5,<6",
         "grpcio-tools>=1.47.0",
         "grpcio-testing>=1.47.0",
+        "grpcio-health-checking>=1.59.2",
         "minio==7.1.0",
         "mock==2.0.0",
         "moto",

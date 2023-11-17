@@ -3,6 +3,8 @@ import sys
 from concurrent import futures
 
 import grpc
+from grpc_health.v1 import health
+from grpc_health.v1 import health_pb2_grpc
 import pyarrow as pa
 from grpc_reflection.v1alpha import reflection
 
@@ -19,24 +21,18 @@ from feast.protos.feast.serving.TransformationService_pb2_grpc import (
     TransformationServiceServicer,
     add_TransformationServiceServicer_to_server,
 )
-from feast.protos.feast.third_party.grpc.health.v1.HealthService_pb2 import (
-    SERVING,
-    HealthCheckResponse,
-)
-from feast.protos.feast.third_party.grpc.health.v1.HealthService_pb2_grpc import (
-    HealthServicer,
-    add_HealthServicer_to_server,
-)
+# from feast.protos.feast.third_party.grpc.health.v1.HealthService_pb2 import (
+#     SERVING,
+#     HealthCheckResponse,
+# )
+# from feast.protos.feast.third_party.grpc.health.v1.HealthService_pb2_grpc import (
+#     HealthServicer,
+#     add_HealthServicer_to_server,
+# )
 from feast.version import get_version
 
 log = logging.getLogger(__name__)
 
-class HealthServer(HealthServicer):
-    def __init__(self) -> None:
-        super().__init__()
-
-    def Check(self, request, context):
-        return HealthCheckResponse(status=SERVING)
 
 class TransformationServer(TransformationServiceServicer):
     def __init__(self, fs: FeatureStore) -> None:
@@ -77,7 +73,7 @@ class TransformationServer(TransformationServiceServicer):
 def start_server(store: FeatureStore, port: int):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     add_TransformationServiceServicer_to_server(TransformationServer(store), server)
-    add_HealthServicer_to_server(HealthServer(), server)
+    health_pb2_grpc.add_HealthServicer_to_server(health.HealthServicer(), server)
     service_names_available_for_reflection = (
         DESCRIPTOR.services_by_name["TransformationService"].full_name,
         reflection.SERVICE_NAME,
