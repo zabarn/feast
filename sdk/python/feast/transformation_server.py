@@ -40,6 +40,9 @@ class HealthServer(HealthServicer):
         response = HealthCheckResponse(status=ServingStatus.SERVING)
         return response
 
+    def Watch(self, request, context, send_response_callback=None):
+        send_response_callback(HealthCheckResponse(status=ServingStatus.SERVING))
+
 class TransformationServer(TransformationServiceServicer):
     def __init__(self, fs: FeatureStore) -> None:
         super().__init__()
