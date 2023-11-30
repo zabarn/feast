@@ -18,21 +18,14 @@ from typing import List
 import pandas as pd
 from pydantic import BaseModel
 
-from feast.data_source import (
-    KafkaSource,
-    RequestSource,
-)
-from feast.data_format import (
-    AvroFormat,
-    JsonFormat,
-    ProtoFormat
-)
+from feast.data_format import AvroFormat
+from feast.data_source import KafkaSource, RequestSource
 from feast.entity import Entity
 from feast.expediagroup.pydantic_models.data_source_model import (
     AnyDataSource,
+    KafkaSourceModel,
     RequestSourceModel,
     SparkSourceModel,
-    KafkaSourceModel,
 )
 from feast.expediagroup.pydantic_models.entity_model import EntityModel
 from feast.expediagroup.pydantic_models.feature_service import FeatureServiceModel
@@ -217,7 +210,6 @@ def test_idempotent_sparksource_conversion():
 
 
 def test_idempotent_kafkasource_conversion():
-
     schema = [
         Field(name="f1", dtype=Float32),
         Field(name="f2", dtype=Bool),
@@ -226,7 +218,7 @@ def test_idempotent_kafkasource_conversion():
         name="source",
         schema=schema,
         description="desc",
-        tags={"tag1": "val1"},,
+        tags={"tag1": "val1"},
         owner="feast",
     )
 
@@ -243,7 +235,6 @@ def test_idempotent_kafkasource_conversion():
         field_mapping={"source_thing": "thing_val"},
         owner="bdodla@expediagroup.com",
         watermark_delay_threshold=timedelta(days=1),
-
     )
 
     pydantic_obj = KafkaSourceModel.from_data_source(python_obj)
@@ -346,7 +337,7 @@ def test_idempotent_featureview_with_streaming_source_conversion():
         timestamp_field="whatevs, just a string",
         message_format=AvroFormat(schema_json="whatevs, also just a string"),
         batch_source=request_source,
-        description="Bob's used message formats emporium is open 24/7"
+        description="Bob's used message formats emporium is open 24/7",
     )
     feature_view = FeatureView(
         name="my-feature-view",

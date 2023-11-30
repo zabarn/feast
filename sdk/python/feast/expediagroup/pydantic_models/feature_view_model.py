@@ -14,9 +14,9 @@ from typing_extensions import Self
 
 from feast.expediagroup.pydantic_models.data_source_model import (
     AnyBatchDataSource,
+    KafkaSourceModel,
     RequestSourceModel,
     SparkSourceModel,
-    KafkaSourceModel,
 )
 from feast.expediagroup.pydantic_models.entity_model import EntityModel
 from feast.expediagroup.pydantic_models.field_model import FieldModel
@@ -137,7 +137,9 @@ class FeatureViewModel(BaseFeatureViewModel):
         # on a parameter.
         stream_source = None
         if feature_view.stream_source:
-            stream_source = KafkaSourceModel.from_data_source(feature_view.stream_source)
+            stream_source = KafkaSourceModel.from_data_source(
+                feature_view.stream_source
+            )
         return cls(
             name=feature_view.name,
             original_entities=[

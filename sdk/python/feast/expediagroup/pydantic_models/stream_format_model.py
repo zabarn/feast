@@ -1,15 +1,10 @@
-from typing import Dict, Literal, Optional, Union
+from typing import Literal, Union
 
 from pydantic import BaseModel
 from pydantic import Field as PydanticField
 from typing_extensions import Annotated, Self
 
-from feast.data_format import (
-    StreamFormat,
-    AvroFormat,
-    JsonFormat,
-    ProtoFormat
-)
+from feast.data_format import AvroFormat, JsonFormat, ProtoFormat
 
 
 class StreamFormatModel(BaseModel):
@@ -52,9 +47,7 @@ class AvroFormatModel(StreamFormatModel):
         Returns:
             An AvroFormat.
         """
-        return AvroFormat(
-            schema_json=self.schoma
-        )
+        return AvroFormat(schema_json=self.schoma)
 
     @classmethod
     def from_stream_format(
@@ -67,9 +60,7 @@ class AvroFormatModel(StreamFormatModel):
         Returns:
             An AvroFormatModel.
         """
-        return cls(
-            schoma=avro_format.schema_json
-        )
+        return cls(schoma=avro_format.schema_json)
 
 
 class JsonFormatModel(StreamFormatModel):
@@ -87,9 +78,7 @@ class JsonFormatModel(StreamFormatModel):
         Returns:
             A JsonFormat.
         """
-        return JsonFormat(
-            schema_json=self.schoma
-        )
+        return JsonFormat(schema_json=self.schoma)
 
     @classmethod
     def from_stream_format(
@@ -102,9 +91,7 @@ class JsonFormatModel(StreamFormatModel):
         Returns:
             A JsonFormatModel.
         """
-        return cls(
-            schoma=json_format.schema_json
-        )
+        return cls(schoma=json_format.schema_json)
 
 
 class ProtoFormatModel(StreamFormatModel):
@@ -122,9 +109,7 @@ class ProtoFormatModel(StreamFormatModel):
         Returns:
             A ProtoFormat.
         """
-        return ProtoFormat(
-            class_path=self.class_path
-        )
+        return ProtoFormat(class_path=self.class_path)
 
     @classmethod
     def from_stream_format(
@@ -137,9 +122,7 @@ class ProtoFormatModel(StreamFormatModel):
         Returns:
             A ProtoFormatModel.
         """
-        return cls(
-            class_path=proto_format.class_path
-        )
+        return cls(class_path=proto_format.class_path)
 
 
 # https://blog.devgenius.io/deserialize-child-classes-with-pydantic-that-gonna-work-784230e1cf83

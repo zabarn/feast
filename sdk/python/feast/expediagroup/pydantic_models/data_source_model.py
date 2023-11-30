@@ -12,17 +12,13 @@ from pydantic import BaseModel
 from pydantic import Field as PydanticField
 from typing_extensions import Annotated, Self
 
-from feast.data_source import (
-    KafkaSource,
-    RequestSource,
-)
+from feast.data_source import KafkaSource, RequestSource
 from feast.expediagroup.pydantic_models.field_model import FieldModel
 from feast.expediagroup.pydantic_models.stream_format_model import (
     AnyStreamFormat,
     AvroFormatModel,
     JsonFormatModel,
     ProtoFormatModel,
-
 )
 from feast.infra.offline_stores.contrib.spark_offline_store.spark_source import (
     SparkSource,
@@ -167,6 +163,7 @@ class SparkSourceModel(DataSourceModel):
             timestamp_field=data_source.timestamp_field,
         )
 
+
 AnyBatchDataSource = Annotated[
     Union[RequestSourceModel, SparkSourceModel],
     PydanticField(discriminator="model_type"),
@@ -175,6 +172,7 @@ AnyBatchDataSource = Annotated[
 
 SUPPORTED_MESSAGE_FORMATS = [AvroFormatModel, JsonFormatModel, ProtoFormatModel]
 SUPPORTED_KAFKA_BATCH_SOURCES = [RequestSourceModel, SparkSourceModel]
+
 
 class KafkaSourceModel(DataSourceModel):
     """
@@ -213,8 +211,10 @@ class KafkaSourceModel(DataSourceModel):
             description=self.description,
             tags=self.tags,
             owner=self.owner,
-            batch_source=self.batch_source.to_data_source(),
-            watermark_delay_threshold=self.watermark_delay_threshold
+            batch_source=self.batch_source.to_data_source()
+            if self.batch_source
+            else None,
+            watermark_delay_threshold=self.watermark_delay_threshold,
         )
 
     @classmethod
@@ -229,23 +229,24 @@ class KafkaSourceModel(DataSourceModel):
             A KafkaSourceModel.
         """
 
-        
         class_ = getattr(
-                sys.modules[__name__],
-                type(data_source.kafka_options.message_format).__name__ + "Model",
-            )
+            sys.modules[__name__],
+            type(data_source.kafka_options.message_format).__name__ + "Model",
+        )
         if class_ not in SUPPORTED_MESSAGE_FORMATS:
             raise ValueError(
                 "Data Source message format is not a supported stream format."
             )
-        message_format = class_.from_stream_format(data_source.kafka_options.message_format)
+        message_format = class_.from_stream_format(
+            data_source.kafka_options.message_format
+        )
 
         batch_source = None
         if data_source.batch_source:
             class_ = getattr(
-                    sys.modules[__name__],
-                    type(data_source.batch_source).__name__ + "Model",
-                )
+                sys.modules[__name__],
+                type(data_source.batch_source).__name__ + "Model",
+            )
             if class_ not in SUPPORTED_KAFKA_BATCH_SOURCES:
                 raise ValueError(
                     "Kafka Source's batch source type is not a supported data source type."
@@ -256,10 +257,16 @@ class KafkaSourceModel(DataSourceModel):
             name=data_source.name,
             timestamp_field=data_source.timestamp_field,
             message_format=message_format,
-            kafka_bootstrap_servers=data_source.kafka_options.kafka_bootstrap_servers if data_source.kafka_options.kafka_bootstrap_servers else "",
-            topic=data_source.kafka_options.topic if data_source.kafka_options.topic else "",
+            kafka_bootstrap_servers=data_source.kafka_options.kafka_bootstrap_servers
+            if data_source.kafka_options.kafka_bootstrap_servers
+            else "",
+            topic=data_source.kafka_options.topic
+            if data_source.kafka_options.topic
+            else "",
             created_timestamp_column=data_source.created_timestamp_column,
-            field_mapping=data_source.field_mapping if data_source.field_mapping else None,
+            field_mapping=data_source.field_mapping
+            if data_source.field_mapping
+            else None,
             description=data_source.description,
             tags=data_source.tags if data_source.tags else None,
             owner=data_source.owner,
@@ -271,6 +278,6 @@ class KafkaSourceModel(DataSourceModel):
 # https://blog.devgenius.io/deserialize-child-classes-with-pydantic-that-gonna-work-784230e1cf83
 # This lets us discriminate child classes of DataSourceModel with type hints.
 AnyDataSource = Annotated[
-    Union[RequestSourceModel, SparkSourceModel, KafkaSourceModel],
+    Union[RequestSourceModel, SparkSourceModel],
     PydanticField(discriminator="model_type"),
 ]
