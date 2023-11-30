@@ -3,6 +3,7 @@ package feast
 import (
 	"context"
 	"errors"
+  "fmt"
 
 	"github.com/apache/arrow/go/v8/arrow/memory"
 
@@ -55,7 +56,7 @@ func NewFeatureStore(config *registry.RepoConfig, callback transformation.Transf
 	if err != nil {
 		return nil, err
 	}
-  endpoint := "http://odfv-deployment-transformations.unified-feature-store.svc.cluster.local:8080" // TODO: replace with a config or real value
+  endpoint := fmt.Sprintf("http://%s-transformations.unified-feature-store.svc.cluster.local:6569", config.Project)
 	transformationService, _ := transformation.NewGrpcTransformationService(config, endpoint)
 
 	return &FeatureStore{
