@@ -278,6 +278,6 @@ class KafkaSourceModel(DataSourceModel):
 # https://blog.devgenius.io/deserialize-child-classes-with-pydantic-that-gonna-work-784230e1cf83
 # This lets us discriminate child classes of DataSourceModel with type hints.
 AnyDataSource = Annotated[
-    Union[RequestSourceModel, SparkSourceModel],
+    Union[RequestSourceModel, SparkSourceModel, KafkaSourceModel],
     PydanticField(discriminator="model_type"),
 ]
