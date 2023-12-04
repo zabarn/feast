@@ -16,6 +16,7 @@ import (
 	"github.com/feast-dev/feast/go/internal/feast/onlineserving"
 	"github.com/feast-dev/feast/go/protos/feast/serving"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"io"
 )
 
@@ -27,7 +28,7 @@ type GrpcTransformationService struct {
 
 func NewGrpcTransformationService(config *registry.RepoConfig, endpoint string) (*GrpcTransformationService, error) {
 	opts := make([]grpc.DialOption, 0)
-	opts = append(opts, grpc.WithDefaultCallOptions())
+	opts = append(opts, grpc.WithDefaultCallOptions(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 
 	conn, err := grpc.Dial(endpoint, opts...)
 	if err != nil {
