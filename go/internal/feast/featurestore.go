@@ -57,7 +57,10 @@ func NewFeatureStore(config *registry.RepoConfig, callback transformation.Transf
 		return nil, err
 	}
   endpoint := fmt.Sprintf("http://%s-transformations.unified-feature-store.svc.cluster.local:6569", config.Project)
-	transformationService, _ := transformation.NewGrpcTransformationService(config, endpoint)
+	transformationService, err := transformation.NewGrpcTransformationService(config, endpoint)
+	if err != nil {
+		return nil, err
+	}
 
 	return &FeatureStore{
 		config:                 config,
