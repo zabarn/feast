@@ -63,11 +63,12 @@ func (s *GrpcTransformationService) GetTransformation(
 		inputColumns = append(inputColumns, arr)
 	}
 
-	inputRecord := array.NewRecord(arrow.NewSchema(inputFields, nil), inputColumns, int64(numRows))
+  inputSchema := arrow.NewSchema(inputFields, nil)
+	inputRecord := array.NewRecord(inputSchema, inputColumns, int64(numRows))
 	defer inputRecord.Release()
 
 	recordValueWriter := new(ByteSliceWriter)
-	arrowWriter, err := ipc.NewFileWriter(recordValueWriter)
+	arrowWriter, err := ipc.NewFileWriter(recordValueWriter, ipc.WithSchema(inputSchema))
 	if err != nil {
     fmt.Println("Error allocating NewFileWriter (GetTransformation)")
 		return nil, err
