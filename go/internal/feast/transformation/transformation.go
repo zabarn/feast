@@ -73,6 +73,7 @@ func AugmentResponseWithOnDemandTransforms(
 
 		var onDemandFeatures []*onlineserving.FeatureVector
 		if transformationService != nil {
+      fmt.Println("Calling GetTransformation from transformation service")
 			onDemandFeatures, err = transformationService.GetTransformation(
 				ctx,
 				odfv,
@@ -81,11 +82,14 @@ func AugmentResponseWithOnDemandTransforms(
 				numRows,
 				fullFeatureNames,
 			)
+      fmt.Println("Done calling")
 			if err != nil {
+        fmt.Println("Error calling GetTransformation from service")
 				ReleaseArrowContext(requestContextArrow)
 				return nil, err
 			}
 		} else {
+      fmt.Println("Calling GetTransformation using old buggy way with memory leaks")
 			onDemandFeatures, err = CallTransformations(
 				odfv,
 				retrievedFeatures,
@@ -95,11 +99,14 @@ func AugmentResponseWithOnDemandTransforms(
 				fullFeatureNames,
 			)
 			if err != nil {
+        fmt.Println("Error calling GetTransformation using old buggy way with memory leaks")
 				ReleaseArrowContext(requestContextArrow)
 				return nil, err
 			}
 		}
+    fmt.Println("Appending on demand features to feature data structure")
 		result = append(result, onDemandFeatures...)
+    fmt.Println("Done appending")
 
 		ReleaseArrowContext(requestContextArrow)
 	}

@@ -69,10 +69,12 @@ func (s *GrpcTransformationService) GetTransformation(
 	recordValueWriter := new(ByteSliceWriter)
 	arrowWriter, err := ipc.NewFileWriter(recordValueWriter)
 	if err != nil {
+    fmt.Println("Error allocating NewFileWriter (GetTransformation)")
 		return nil, err
 	}
 	err = arrowWriter.Write(inputRecord)
 	if err != nil {
+    fmt.Println("Error writing inputRecord (GetTransformation)")
 		return nil, err
 	}
 	arrowInput := serving.ValueType_ArrowValue{ArrowValue: recordValueWriter.buf}
@@ -86,6 +88,7 @@ func (s *GrpcTransformationService) GetTransformation(
 
 	res, err := (*s.client).TransformFeatures(ctx, &req)
 	if err != nil {
+    fmt.Println("Error calling over the network to get transformations")
 		return nil, err
 	}
 
@@ -103,11 +106,13 @@ func ExtractTransformationResponse(
 	arrowMemory := memory.NewGoAllocator()
 	arrowReader, err := ipc.NewFileReader(reader, ipc.WithAllocator(arrowMemory))
 	if err != nil {
+    fmt.Println("Error allocating NewFileReader (ExtractTransformationResponse)")
 		return nil, err
 	}
 
 	outRecord, err := arrowReader.Record(numRows)
 	if err != nil {
+    fmt.Println("Error reading arrow record (ExtractTransformationResponse)")
 		return nil, err
 	}
 	result := make([]*onlineserving.FeatureVector, 0)
