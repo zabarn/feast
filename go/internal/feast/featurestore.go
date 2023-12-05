@@ -3,7 +3,8 @@ package feast
 import (
 	"context"
 	"errors"
-  "fmt"
+	"fmt"
+	"strings"
 
 	"github.com/apache/arrow/go/v8/arrow/memory"
 
@@ -56,7 +57,8 @@ func NewFeatureStore(config *registry.RepoConfig, callback transformation.Transf
 	if err != nil {
 		return nil, err
 	}
-  endpoint := fmt.Sprintf("http://%s-transformations.unified-feature-store.svc.cluster.local:6569", config.Project)
+  sanitizedProjectName := strings.Replace(config.Project, "_", "-", -1)
+  endpoint := fmt.Sprintf("http://%s-transformations.unified-feature-store.svc.cluster.local", sanitizedProjectName)
 	transformationService, err := transformation.NewGrpcTransformationService(config, endpoint)
 	if err != nil {
 		return nil, err
