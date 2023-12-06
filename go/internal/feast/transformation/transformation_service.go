@@ -70,12 +70,10 @@ func (s *GrpcTransformationService) GetTransformation(
 	recordValueWriter := new(ByteSliceWriter)
 	arrowWriter, err := ipc.NewFileWriter(recordValueWriter, ipc.WithSchema(inputSchema))
 	if err != nil {
-    fmt.Println("Error allocating NewFileWriter (GetTransformation)")
 		return nil, err
 	}
 	err = arrowWriter.Write(inputRecord)
 	if err != nil {
-    fmt.Println("Error writing inputRecord (GetTransformation)")
 		return nil, err
 	}
 	arrowInput := serving.ValueType_ArrowValue{ArrowValue: recordValueWriter.buf}

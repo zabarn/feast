@@ -58,7 +58,7 @@ func NewFeatureStore(config *registry.RepoConfig, callback transformation.Transf
 		return nil, err
 	}
   sanitizedProjectName := strings.Replace(config.Project, "_", "-", -1)
-  endpoint := fmt.Sprintf("%s-transformations.unified-feature-store.svc.cluster.local:6569", sanitizedProjectName)
+  endpoint := fmt.Sprintf("%s-transformations.unified-feature-store.svc.cluster.local:80", sanitizedProjectName)
 	transformationService, err := transformation.NewGrpcTransformationService(config, endpoint)
 	if err != nil {
 		return nil, err
