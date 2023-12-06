@@ -76,6 +76,10 @@ func (s *GrpcTransformationService) GetTransformation(
 	if err != nil {
 		return nil, err
 	}
+	err = arrowWriter.Close()
+	if err != nil {
+		return nil, err
+	}
 	arrowInput := serving.ValueType_ArrowValue{ArrowValue: recordValueWriter.buf}
 	transformationInput := serving.ValueType{Value: &arrowInput}
 
