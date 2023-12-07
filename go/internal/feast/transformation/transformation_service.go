@@ -4,9 +4,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/feast-dev/feast/go/internal/feast/registry"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"strings"
+	"honnef.co/go/tools/printf"
+
+	"io"
 
 	"github.com/apache/arrow/go/v8/arrow"
 	"github.com/apache/arrow/go/v8/arrow/array"
@@ -17,7 +21,6 @@ import (
 	"github.com/feast-dev/feast/go/protos/feast/serving"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"io"
 )
 
 type GrpcTransformationService struct {
@@ -54,11 +57,11 @@ func (s *GrpcTransformationService) GetTransformation(
 
 	inputFields := make([]arrow.Field, 0)
 	inputColumns := make([]arrow.Array, 0)
-	for name, arr := range retrievedFeatures {
+	for name, arr := range requestContext {
 		inputFields = append(inputFields, arrow.Field{Name: name, Type: arr.DataType()})
 		inputColumns = append(inputColumns, arr)
 	}
-	for name, arr := range requestContext {
+	for name, arr := range retrievedFeatures {
 		inputFields = append(inputFields, arrow.Field{Name: name, Type: arr.DataType()})
 		inputColumns = append(inputColumns, arr)
 	}
