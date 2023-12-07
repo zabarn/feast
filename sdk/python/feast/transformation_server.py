@@ -200,6 +200,7 @@ class TransformationServer(TransformationServiceServicer):
             raise
 
         df = pa.ipc.open_file(request.transformation_input.arrow_value).read_pandas()
+        print(df.to_string())
 
         result_df = odfv.get_transformed_features_df(df, True)
         result_arrow = pa.Table.from_pandas(result_df)
