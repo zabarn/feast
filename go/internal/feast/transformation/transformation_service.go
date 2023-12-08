@@ -8,8 +8,6 @@ import (
 
 	"github.com/feast-dev/feast/go/internal/feast/registry"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"honnef.co/go/tools/printf"
-
 	"io"
 
 	"github.com/apache/arrow/go/v8/arrow"
