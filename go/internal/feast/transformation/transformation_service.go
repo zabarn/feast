@@ -59,35 +59,11 @@ func (s *GrpcTransformationService) GetTransformation(
 	for name, arr := range retrievedFeatures {
 		inputFields = append(inputFields, arrow.Field{Name: name, Type: arr.DataType()})
 		inputColumns = append(inputColumns, arr)
-    switch col := arr.(type) {
-    case *array.Int64:
-      fmt.Println(col.Int64Values())
-    case *array.Int32:
-      fmt.Println(col.Int32Values())
-    case *array.String:
-      fmt.Println(col.String())
-    case *array.Float32:
-      fmt.Println(col.Float32Values())
-    case *array.Float64:
-      fmt.Println(col.Float64Values())
-    }
 	}
   fmt.Println("Printing request features")
 	for name, arr := range requestContext {
 		inputFields = append(inputFields, arrow.Field{Name: name, Type: arr.DataType()})
 		inputColumns = append(inputColumns, arr)
-    switch col := arr.(type) {
-    case *array.Int64:
-      fmt.Println(col.Int64Values())
-    case *array.Int32:
-      fmt.Println(col.Int32Values())
-    case *array.String:
-      fmt.Println(col.String())
-    case *array.Float32:
-      fmt.Println(col.Float32Values())
-    case *array.Float64:
-      fmt.Println(col.Float64Values())
-    }
 	}
 
   inputSchema := arrow.NewSchema(inputFields, nil)
