@@ -52,15 +52,14 @@ func (s *GrpcTransformationService) GetTransformation(
 	fullFeatureNames bool,
 ) ([]*onlineserving.FeatureVector, error) {
 	var err error
-  allocator := memory.NewGoAllocator()
 
 	inputFields := make([]arrow.Field, 0)
 	inputColumns := make([]arrow.Array, 0)
-	for name, arr := range requestContext {
+	for name, arr := range retrievedFeatures {
 		inputFields = append(inputFields, arrow.Field{Name: name, Type: arr.DataType()})
 		inputColumns = append(inputColumns, arr)
 	}
-	for name, arr := range retrievedFeatures {
+	for name, arr := range requestContext {
 		inputFields = append(inputFields, arrow.Field{Name: name, Type: arr.DataType()})
 		inputColumns = append(inputColumns, arr)
 	}
@@ -69,21 +68,23 @@ func (s *GrpcTransformationService) GetTransformation(
 	inputRecord := array.NewRecord(inputSchema, inputColumns, int64(numRows))
 	defer inputRecord.Release()
 
-  var buf bytes.Buffer
-  writer := ipc.NewWriter(&buf, ipc.WithAllocator(allocator))
-
-	if err := writer.Write(inputRecord); err != nil {
-		fmt.Println("Error writing record:", err)
+  recordValueWriter := new(ByteSliceWriter)
+	arrowWriter, err := ipc.NewFileWriter(recordValueWriter, ipc.WithSchema(inputSchema))
+	if err != nil {
 		return nil, err
 	}
 
-	// Close the Arrow Writer
-	if err := writer.Close(); err != nil {
-		fmt.Println("Error closing Arrow Writer:", err)
+	err = arrowWriter.Write(inputRecord)
+	if err != nil {
 		return nil, err
 	}
 
-	arrowInput := serving.ValueType_ArrowValue{ArrowValue: buf.Bytes()}
+	err = arrowWriter.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	arrowInput := serving.ValueType_ArrowValue{ArrowValue: recordValueWriter.buf}
 	transformationInput := serving.ValueType{Value: &arrowInput}
 
 	req := serving.TransformFeaturesRequest{
@@ -170,15 +171,18 @@ type ByteSliceWriter struct {
 }
 
 func (w *ByteSliceWriter) Write(p []byte) (n int, err error) {
-	capacity := len(p)
-	writeSlice := w.buf[w.offset:]
-	if len(writeSlice) < capacity {
-		w.buf = append(w.buf, make([]byte, capacity-len(writeSlice))...)
-		writeSlice = w.buf[w.offset:]
-	}
-	copy(writeSlice, p)
-	w.offset += int64(capacity)
-	return capacity, nil
+  minCap := int(w.offset) + len(p)
+  if minCap > cap(w.buf) { // Make sure buf has enough capacity:
+      buf2 := make([]byte, len(w.buf), minCap+len(p)) // add some extra
+      copy(buf2, w.buf)
+      w.buf = buf2
+  }
+  if minCap > len(w.buf) {
+      w.buf = w.buf[:minCap]
+  }
+  copy(w.buf[w.offset:], p)
+  w.offset += int64(len(p))
+  return len(p), nil
 }
 
 func (w *ByteSliceWriter) Seek(offset int64, whence int) (int64, error) {
