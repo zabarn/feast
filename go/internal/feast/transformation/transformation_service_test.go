@@ -21,7 +21,7 @@ func TestSendGrpcRequest(t *testing.T) {
     for j := 0; j < 10; j++ {
       dummyColumn.Append(int64(j))
     }
-		inputFields = append(inputFields, arrow.Field{Name: fmt.Sprintf("Field %d", i), Type: &arrow.Int32Type{}})
+		inputFields = append(inputFields, arrow.Field{Name: fmt.Sprintf("Field %d", i), Type: &arrow.Int64Type{}})
 		inputColumns = append(inputColumns, dummyColumn.NewArray())
 	}
 
@@ -33,4 +33,7 @@ func TestSendGrpcRequest(t *testing.T) {
 	arrowWriter, _ := ipc.NewFileWriter(recordValueWriter, ipc.WithSchema(inputSchema))
 	arrowWriter.Write(inputRecord)
 	arrowWriter.Close()
+  for i, col := range inputRecord.Columns() {
+		fmt.Printf("column[%d] %q: %v\n", i, inputRecord.ColumnName(i), col)
+	}
 }
