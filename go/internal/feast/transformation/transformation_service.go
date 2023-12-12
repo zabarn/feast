@@ -52,6 +52,7 @@ func (s *GrpcTransformationService) GetTransformation(
 	fullFeatureNames bool,
 ) ([]*onlineserving.FeatureVector, error) {
 	var err error
+  allocator := memory.NewGoAllocator()
 
 	inputFields := make([]arrow.Field, 0)
 	inputColumns := make([]arrow.Array, 0)
@@ -68,23 +69,21 @@ func (s *GrpcTransformationService) GetTransformation(
 	inputRecord := array.NewRecord(inputSchema, inputColumns, int64(numRows))
 	defer inputRecord.Release()
 
-	recordValueWriter := new(ByteSliceWriter)
-	arrowWriter, err := ipc.NewFileWriter(recordValueWriter, ipc.WithSchema(inputSchema))
-	if err != nil {
+  var buf bytes.Buffer
+  writer := ipc.NewWriter(&buf, ipc.WithAllocator(allocator))
+
+	if err := writer.Write(inputRecord); err != nil {
+		fmt.Println("Error writing record:", err)
 		return nil, err
 	}
 
-	err = arrowWriter.Write(inputRecord)
-	if err != nil {
+	// Close the Arrow Writer
+	if err := writer.Close(); err != nil {
+		fmt.Println("Error closing Arrow Writer:", err)
 		return nil, err
 	}
 
-	err = arrowWriter.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	arrowInput := serving.ValueType_ArrowValue{ArrowValue: recordValueWriter.buf}
+	arrowInput := serving.ValueType_ArrowValue{ArrowValue: buf.Bytes()}
 	transformationInput := serving.ValueType{Value: &arrowInput}
 
 	req := serving.TransformFeaturesRequest{

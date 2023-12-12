@@ -4,6 +4,8 @@ import (
   "testing"
   "fmt"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/apache/arrow/go/v8/arrow"
 	"github.com/apache/arrow/go/v8/arrow/array"
 	"github.com/apache/arrow/go/v8/arrow/ipc"
@@ -33,7 +35,7 @@ func TestSendGrpcRequest(t *testing.T) {
 	arrowWriter, _ := ipc.NewFileWriter(recordValueWriter, ipc.WithSchema(inputSchema))
 	arrowWriter.Write(inputRecord)
 	arrowWriter.Close()
-  for i, col := range inputRecord.Columns() {
-		fmt.Printf("column[%d] %q: %v\n", i, inputRecord.ColumnName(i), col)
+  for i := range inputRecord.Columns() {
+    assert.Equal(t, fmt.Sprintf("Field %d", i), inputRecord.ColumnName(i))
 	}
 }
