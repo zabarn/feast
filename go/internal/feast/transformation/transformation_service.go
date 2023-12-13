@@ -55,12 +55,10 @@ func (s *GrpcTransformationService) GetTransformation(
 
 	inputFields := make([]arrow.Field, 0)
 	inputColumns := make([]arrow.Array, 0)
-  fmt.Println("Printing retrieved features")
 	for name, arr := range retrievedFeatures {
 		inputFields = append(inputFields, arrow.Field{Name: name, Type: arr.DataType()})
 		inputColumns = append(inputColumns, arr)
 	}
-  fmt.Println("Printing request features")
 	for name, arr := range requestContext {
 		inputFields = append(inputFields, arrow.Field{Name: name, Type: arr.DataType()})
 		inputColumns = append(inputColumns, arr)
@@ -97,7 +95,6 @@ func (s *GrpcTransformationService) GetTransformation(
 
 	res, err := (*s.client).TransformFeatures(ctx, &req)
 	if err != nil {
-    fmt.Println("Error calling over the network to get transformations")
 		return nil, err
 	}
 
@@ -111,15 +108,14 @@ func ExtractTransformationResponse(
 	numRows int,
 	fullFeatureNames bool,
 ) ([]*onlineserving.FeatureVector, error) {
-	reader := bytes.NewReader(arrowBytes)
 	arrowMemory := memory.NewGoAllocator()
-	arrowReader, err := ipc.NewFileReader(reader, ipc.WithAllocator(arrowMemory))
+	arrowReader, err := ipc.NewFileReader(bytes.NewReader(arrowBytes), ipc.WithAllocator(arrowMemory))
 	if err != nil {
     fmt.Println("Error allocating NewFileReader (ExtractTransformationResponse)")
 		return nil, err
 	}
 
-	outRecord, err := arrowReader.Record(numRows)
+	outRecord, err := arrowReader.Read()
 	if err != nil {
     fmt.Println("Error reading arrow record (ExtractTransformationResponse)")
 		return nil, err

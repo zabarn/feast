@@ -175,23 +175,6 @@ func (fs *FeatureStore) GetOnlineFeatures(
 		result = append(result, vectors...)
 	}
 
-  for i, arr := range result {
-    fmt.Println(i)
-    switch col := arr.Values.(type) {
-    case *array.Int64:
-      fmt.Println(col.Int64Values())
-    case *array.Int32:
-      fmt.Println(col.Int32Values())
-    case *array.String:
-      fmt.Println(col.String())
-    case *array.Float32:
-      fmt.Println(col.Float32Values())
-    case *array.Float64:
-      fmt.Println(col.Float64Values())
-    }
-  }
-
-
 	if fs.transformationCallback != nil || fs.transformationService != nil {
 		onDemandFeatures, err := transformation.AugmentResponseWithOnDemandTransforms(
 			ctx,
