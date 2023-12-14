@@ -101,20 +101,21 @@ func AugmentResponseWithOnDemandTransforms(
 		}
 		result = append(result, onDemandFeatures...)
 
+    fmt.Println("From AugmentResponseWithOnDemandTransforms:")
     for _, arr := range result {
-    fmt.Println(arr.Name)
-    switch col := arr.Values.(type) {
-    case *array.Int64:
-      fmt.Println(col.Int64Values())
-    case *array.Int32:
-      fmt.Println(col.Int32Values())
-    case *array.String:
-      fmt.Println(col.String())
-    case *array.Float32:
-      fmt.Println(col.Float32Values())
-    case *array.Float64:
-      fmt.Println(col.Float64Values())
-    }
+      fmt.Println(fmt.Sprintf("%s (%s)", arr.Name, arr.Values.DataType().Fingerprint()))
+      switch col := arr.Values.(type) {
+      case *array.Int64:
+        fmt.Println(col.Int64Values())
+      case *array.Int32:
+        fmt.Println(col.Int32Values())
+      case *array.String:
+        fmt.Println(col.String())
+      case *array.Float32:
+        fmt.Println(col.Float32Values())
+      case *array.Float64:
+        fmt.Println(col.Float64Values())
+      }
     }
 
 		ReleaseArrowContext(requestContextArrow)
