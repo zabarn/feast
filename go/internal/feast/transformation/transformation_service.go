@@ -99,7 +99,7 @@ func (s *GrpcTransformationService) GetTransformation(
 	}
 
 	arrowBytes := res.TransformationOutput.GetArrowValue()
-	return ExtractTransformationResponse(featureView, arrowBytes, numRows, fullFeatureNames)
+	return ExtractTransformationResponse(featureView, arrowBytes, numRows, false)
 }
 
 func ExtractTransformationResponse(
