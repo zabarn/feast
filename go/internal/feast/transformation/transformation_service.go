@@ -111,17 +111,16 @@ func ExtractTransformationResponse(
 	arrowMemory := memory.NewGoAllocator()
 	arrowReader, err := ipc.NewFileReader(bytes.NewReader(arrowBytes), ipc.WithAllocator(arrowMemory))
 	if err != nil {
-    fmt.Println("Error allocating NewFileReader (ExtractTransformationResponse)")
 		return nil, err
 	}
 
 	outRecord, err := arrowReader.Read()
 	if err != nil {
-    fmt.Println("Error reading arrow record (ExtractTransformationResponse)")
 		return nil, err
 	}
 	result := make([]*onlineserving.FeatureVector, 0)
 	for idx, field := range outRecord.Schema().Fields() {
+    fmt.Println(field.Name)
 		dropFeature := true
 
 		if featureView.Base.Projection != nil {
@@ -142,6 +141,7 @@ func ExtractTransformationResponse(
 		}
 
 		if dropFeature {
+      fmt.Println("Dropped!!")
 			continue
 		}
 
