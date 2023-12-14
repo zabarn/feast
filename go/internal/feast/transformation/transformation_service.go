@@ -120,32 +120,23 @@ func ExtractTransformationResponse(
 	}
 	result := make([]*onlineserving.FeatureVector, 0)
 	for idx, field := range outRecord.Schema().Fields() {
-    fmt.Println(field.Name)
 		dropFeature := true
 
 		if featureView.Base.Projection != nil {
-			var featureName string
-			if fullFeatureNames {
-				featureName = strings.Split(field.Name, "__")[1]
-			} else {
-				featureName = field.Name
-			}
+      fmt.Println(field.Name)
+      featureName := strings.Split(field.Name, "__")[1]
+      fmt.Println(featureName)
 
-      fmt.Println("Projection features:")
 			for _, feature := range featureView.Base.Projection.Features {
-        fmt.Print(feature.Name)
-        fmt.Print(", ")
 				if featureName == feature.Name {
 					dropFeature = false
 				}
 			}
-      fmt.Print("\n")
 		} else {
 			dropFeature = false
 		}
 
 		if dropFeature {
-      fmt.Println("Dropped!!")
 			continue
 		}
 
