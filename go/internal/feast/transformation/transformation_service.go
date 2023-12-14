@@ -99,7 +99,7 @@ func (s *GrpcTransformationService) GetTransformation(
 	}
 
 	arrowBytes := res.TransformationOutput.GetArrowValue()
-	return ExtractTransformationResponse(featureView, arrowBytes, numRows, fullFeatureNames)
+	return ExtractTransformationResponse(featureView, arrowBytes, numRows, true)
 }
 
 func ExtractTransformationResponse(
@@ -120,7 +120,6 @@ func ExtractTransformationResponse(
 	}
 	result := make([]*onlineserving.FeatureVector, 0)
 	for idx, field := range outRecord.Schema().Fields() {
-    fmt.Println(field.Name)
 		dropFeature := true
 
 		if featureView.Base.Projection != nil {
@@ -141,7 +140,6 @@ func ExtractTransformationResponse(
 		}
 
 		if dropFeature {
-      fmt.Println("Dropped!!")
 			continue
 		}
 
