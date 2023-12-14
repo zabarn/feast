@@ -133,7 +133,8 @@ func ExtractTransformationResponse(
 
       fmt.Println("Projection features:")
 			for _, feature := range featureView.Base.Projection.Features {
-        fmt.Print(featureName)
+        fmt.Print(feature.Name)
+        fmt.Print(", ")
 				if featureName == feature.Name {
 					dropFeature = false
 				}
