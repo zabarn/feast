@@ -1,11 +1,11 @@
 import collections
-import grpc
 import logging
-import pyarrow as pa
 import sys
 import threading
 from concurrent import futures
 
+import grpc
+import pyarrow as pa
 from grpc_reflection.v1alpha import reflection
 
 from feast.errors import OnDemandFeatureViewNotFoundException

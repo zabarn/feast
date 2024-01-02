@@ -64,11 +64,11 @@ func (s *GrpcTransformationService) GetTransformation(
 		inputColumns = append(inputColumns, arr)
 	}
 
-  inputSchema := arrow.NewSchema(inputFields, nil)
+       inputSchema := arrow.NewSchema(inputFields, nil)
 	inputRecord := array.NewRecord(inputSchema, inputColumns, int64(numRows))
 	defer inputRecord.Release()
 
-  recordValueWriter := new(ByteSliceWriter)
+       recordValueWriter := new(ByteSliceWriter)
 	arrowWriter, err := ipc.NewFileWriter(recordValueWriter, ipc.WithSchema(inputSchema))
 	if err != nil {
 		return nil, err
@@ -122,7 +122,7 @@ func ExtractTransformationResponse(
 	for idx, field := range outRecord.Schema().Fields() {
 		dropFeature := true
 
-    featureName := strings.Split(field.Name, "__")[1]
+               featureName := strings.Split(field.Name, "__")[1]
 		if featureView.Base.Projection != nil {
 
 			for _, feature := range featureView.Base.Projection.Features {
