@@ -86,7 +86,7 @@ class HealthServer(HealthServicer):
         self._lock = threading.RLock()
         self._server_status = {"": ServingStatus.SERVING}
         self._send_response_callbacks = {}
-        self.Watch.__func__.experimental_non_blocking = (experimental_non_blocking)
+        self.Watch.__func__.experimental_non_blocking = experimental_non_blocking
         self.Watch.__func__.experimental_thread_pool = experimental_thread_pool
         self._gracefully_shutting_down = False
 
@@ -122,7 +122,7 @@ class HealthServer(HealthServicer):
         with self._lock:
             status = self._server_status.get(service)
             if status is None:
-                status = (ServingStatus.SERVICE_UNKNOWN)  # pylint: disable=no-member
+                status = ServingStatus.SERVICE_UNKNOWN  # pylint: disable=no-member
             send_response_callback(HealthCheckResponse(status=status))
             if service not in self._send_response_callbacks:
                 self._send_response_callbacks[service] = set()
