@@ -33,6 +33,7 @@ from feast.version import get_version
 
 log = logging.getLogger(__name__)
 
+
 class _Watcher:
     def __init__(self):
         self._condition = threading.Condition()
@@ -66,6 +67,8 @@ class _Watcher:
         with self._condition:
             self._open = False
             self._condition.notify()
+
+
 def _watcher_to_send_response_callback_adapter(watcher):
     def send_response_callback(response):
         if response is None:
@@ -74,6 +77,7 @@ def _watcher_to_send_response_callback_adapter(watcher):
             watcher.add(response)
 
     return send_response_callback
+
 
 class HealthServer(HealthServicer):
     """Servicer handling RPCs for service statuses."""
@@ -177,6 +181,7 @@ class HealthServer(HealthServicer):
                         service, ServingStatus.NOT_SERVING
                     )  # pylint: disable=no-member
                 self._gracefully_shutting_down = True
+
 
 class TransformationServer(TransformationServiceServicer):
     def __init__(self, fs: FeatureStore) -> None:
