@@ -115,6 +115,25 @@ class AvroFormat(StreamFormat):
         return StreamFormatProto(avro_format=proto)
 
 
+class ConfluentAvroFormat(StreamFormat):
+    """
+    Defines the ConfluentAvro streaming data format that encodes data in ConfluentAvro format
+    """
+
+    def __init__(self, schema_json: str):
+        """
+        Construct a new ConfluentAvro data format.
+
+        Args:
+            schema_json: ConfluentAvro schema definition in JSON
+        """
+        self.schema_json = schema_json
+
+    def to_proto(self):
+        proto = StreamFormatProto.ConfluentAvroFormat(schema_json=self.schema_json)
+        return StreamFormatProto(confluent_avro_format=proto)
+
+
 class JsonFormat(StreamFormat):
     """
     Defines the Json streaming data format that encodes data in Json format
