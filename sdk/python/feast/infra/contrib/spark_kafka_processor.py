@@ -54,7 +54,7 @@ class SparkKafkaProcessor(StreamProcessor):
         if isinstance(sfv.stream_source.kafka_options.message_format, JsonFormat):
             self.format = "json"
         elif isinstance(sfv.stream_source.kafka_options.message_format, ConfluentAvroFormat):
-            "confluent_avro"
+            self.format = "confluent_avro"
 
 
         if not isinstance(config, SparkProcessorConfig):
@@ -74,6 +74,8 @@ class SparkKafkaProcessor(StreamProcessor):
 
     def _ingest_stream_data(self) -> StreamTable:
         """Only supports json, avro and confluent_avro formats currently."""
+        # Test that we reach this path, and stop.
+        raise ValueError("No, no, NO NO NO, stop everything. Shut it down.")
         if self.format == "json":
             if not isinstance(
                 self.data_source.kafka_options.message_format, JsonFormat
@@ -97,6 +99,28 @@ class SparkKafkaProcessor(StreamProcessor):
                 )
                 .select("table.*")
             )
+        elif self.format == "confluent_avro":
+            if not isinstance(
+                self.data_source.kafka_options.message_format, ConfluentAvroFormat
+            ):
+                raise ValueError("kafka source message format is not confluent_avro format")
+            #TODO: process ConfluentAvro format.
+            # stream_df = (
+            #     self.spark.readStream.format("kafka")
+            #     .options(**self.kafka_options_config)
+            #     .load()
+            #     .withColumn("byteValue", func.expr("substring(value, 6, length(value)-5)"))
+            #     .select(
+            #         from_avro(
+            #             func.col("byteValue"),
+            #             self.data_source.kafka_options.message_format.schema_json,
+            #             self.avro_options,
+            #         ).alias("table")
+            #     )
+            #     .select("table.*")
+            # )
+            raise ValueError("HOLY MOLY I AM NOT READY TO DEAL WITH CONFLUENT AVRO, GUYS")
+            stream_df = None
         else:
             if not isinstance(
                 self.data_source.kafka_options.message_format, AvroFormat
@@ -120,13 +144,6 @@ class SparkKafkaProcessor(StreamProcessor):
                 )
                 .select("table.*")
             )
-        else:
-            if not isinstance(
-                self.data_source.kafka_options.message_format, ConfluentAvroFormat
-            ):
-                raise ValueError("kafka source message format is not confluent_avro format")
-            #TO_DO: process ConfluentAvro format.
-            stream_df = None
         return stream_df
 
     def _construct_transformation_plan(self, df: StreamTable) -> StreamTable:

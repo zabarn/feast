@@ -159,6 +159,6 @@ class ProtoFormatModel(StreamFormatModel):
 # https://blog.devgenius.io/deserialize-child-classes-with-pydantic-that-gonna-work-784230e1cf83
 # This lets us discriminate child classes of DataSourceModel with type hints.
 AnyStreamFormat = Annotated[
-    Union[AvroFormatModel, JsonFormatModel, ProtoFormatModel],
+    Union[ConfluentAvroFormatModel, AvroFormatModel, JsonFormatModel, ProtoFormatModel],
     PydanticField(discriminator="format"),
 ]

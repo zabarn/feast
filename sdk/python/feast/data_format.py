@@ -89,6 +89,8 @@ class StreamFormat(ABC):
         fmt = proto.WhichOneof("format")
         if fmt == "avro_format":
             return AvroFormat(schema_json=proto.avro_format.schema_json)
+        if fmt == "confluent_avro_format":
+            return ConfluentAvroFormat(schema_json=proto.confluent_avro_format.schema_json)
         if fmt == "json_format":
             return JsonFormat(schema_json=proto.json_format.schema_json)
         if fmt == "proto_format":
