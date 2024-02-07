@@ -169,7 +169,7 @@ class FeatureStore:
         registry_config = self.config.registry
         if registry_config.registry_type == "sql":
             self._registry = SqlRegistry(registry_config, self.config.project, None)
-        if registry_config.registry_type == "http":
+        elif registry_config.registry_type == "http":
             self._registry = HttpRegistry(registry_config, self.config.project, None)
         elif registry_config.registry_type == "snowflake.registry":
             from feast.infra.registry.snowflake import SnowflakeRegistry
@@ -1663,9 +1663,9 @@ class FeatureStore:
 
             return self._go_server.get_online_features(
                 features_refs=features if isinstance(features, list) else [],
-                feature_service=features
-                if isinstance(features, FeatureService)
-                else None,
+                feature_service=(
+                    features if isinstance(features, FeatureService) else None
+                ),
                 entities=entity_native_values,
                 request_data={},  # TODO: add request data parameter to public API
                 full_feature_names=full_feature_names,
@@ -1876,9 +1876,9 @@ class FeatureStore:
                 )
                 entity_name_to_join_key_map[entity_name] = join_key
             for entity_column in feature_view.entity_columns:
-                entity_type_map[
-                    entity_column.name
-                ] = entity_column.dtype.to_value_type()
+                entity_type_map[entity_column.name] = (
+                    entity_column.dtype.to_value_type()
+                )
 
         return (
             entity_name_to_join_key_map,
@@ -2093,9 +2093,11 @@ class FeatureStore:
         """
         # Add the feature names to the response.
         requested_feature_refs = [
-            f"{table.projection.name_to_use()}__{feature_name}"
-            if full_feature_names
-            else feature_name
+            (
+                f"{table.projection.name_to_use()}__{feature_name}"
+                if full_feature_names
+                else feature_name
+            )
             for feature_name in requested_features
         ]
         online_features_response.metadata.feature_names.val.extend(
