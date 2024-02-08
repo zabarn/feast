@@ -14,7 +14,7 @@ def test_primitive_feast_type():
 
 def test_array_feast_type():
     array_string = Array(String)
-    assert array_string.to_value_type() == ValueType.STRING_LIST 
+    assert array_string.to_value_type() == ValueType.STRING_LIST
     assert from_value_type(array_string.to_value_type()) == array_string
 
     array_float_32 = Array(Float32)
