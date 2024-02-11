@@ -2,7 +2,7 @@ from types import MethodType
 from typing import List, Optional
 
 import pandas as pd
-from confluent_kafka.schema_registry import SchemaRegistryClient
+from feast.expediagroup.schema_registry.schema_registry import SchemaRegistry
 from confluent_kafka.schema_registry.avro import AvroDeserializer
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.avro.functions import from_avro
@@ -72,7 +72,11 @@ class SparkKafkaProcessor(StreamProcessor):
     def init_confluent_avro_processor(self) -> None:
         """Extra initialization for Confluent Avro processor, which uses
         SchemaRegistry and the Avro Deserializer, both of which need initialization."""
-        pass
+        
+        user = "VAULT_SECRETS"
+        password = "VAULT_SECRETS"
+        urn = "NOT SURE"
+        environment = "NOT SURE"
 
     def ingest_stream_feature_view(self, to: PushMode = PushMode.ONLINE) -> None:
         ingested_stream_df = self._ingest_stream_data()
