@@ -2,7 +2,6 @@ from types import MethodType
 from typing import List, Optional
 
 import pandas as pd
-from feast.expediagroup.schema_registry.schema_registry import SchemaRegistry
 from confluent_kafka.schema_registry.avro import AvroDeserializer
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.avro.functions import from_avro
@@ -10,6 +9,7 @@ from pyspark.sql.functions import col, from_json
 
 from feast.data_format import AvroFormat, ConfluentAvroFormat, JsonFormat
 from feast.data_source import KafkaSource, PushMode
+from feast.expediagroup.schema_registry.schema_registry import SchemaRegistry
 from feast.feature_store import FeatureStore
 from feast.infra.contrib.stream_processor import (
     ProcessorConfig,
@@ -23,6 +23,7 @@ class SparkProcessorConfig(ProcessorConfig):
     spark_session: SparkSession
     processing_time: str
     query_timeout: int
+    schema_registry_client: Optional[SchemaRegistry]
 
 
 class SparkKafkaProcessor(StreamProcessor):
@@ -57,7 +58,6 @@ class SparkKafkaProcessor(StreamProcessor):
             self.format = "json"
         elif isinstance(sfv.stream_source.kafka_options.message_format, ConfluentAvroFormat):
             self.format = "confluent_avro"
-            self.init_confluent_avro_processor()
 
         if not isinstance(config, SparkProcessorConfig):
             raise ValueError("config is not spark processor config")
@@ -65,18 +65,17 @@ class SparkKafkaProcessor(StreamProcessor):
         self.preprocess_fn = preprocess_fn
         self.processing_time = config.processing_time
         self.query_timeout = config.query_timeout
+        self.schema_registry_client = config.schema_registry_client if config.schema_registry_client else None
         self.join_keys = [fs.get_entity(entity).join_key for entity in sfv.entities]
+
+        if isinstance(sfv.stream_source.kafka_options.message_format, ConfluentAvroFormat):
+            self.init_confluent_avro_processor()
+
         super().__init__(fs=fs, sfv=sfv, data_source=sfv.stream_source)
 
-
     def init_confluent_avro_processor(self) -> None:
-        """Extra initialization for Confluent Avro processor, which uses
-        SchemaRegistry and the Avro Deserializer, both of which need initialization."""
-        
-        user = "VAULT_SECRETS"
-        password = "VAULT_SECRETS"
-        urn = "NOT SURE"
-        environment = "NOT SURE"
+        """Extra initialization for Confluent Avro processor."""
+        self.deserializer = AvroDeserializer(schema_registry_client=self.schema_registry_client.get_client())
 
     def ingest_stream_feature_view(self, to: PushMode = PushMode.ONLINE) -> None:
         ingested_stream_df = self._ingest_stream_data()
@@ -115,8 +114,16 @@ class SparkKafkaProcessor(StreamProcessor):
                 self.data_source.kafka_options.message_format, ConfluentAvroFormat
             ):
                 raise ValueError("kafka source message format is not confluent_avro format")
-            raise ValueError("HOLY MOLY I AM NOT READY TO DEAL WITH CONFLUENT AVRO, GUYS")
-            stream_df = None
+
+            stream_df = (
+                self.spark.readStream.format("kafka")
+                .options(**self.kafka_options_config)
+                .load()
+                .select(
+                    self.deserializer(col("value"))
+                )
+                .select("table.*")
+            )
         else:
             if not isinstance(
                 self.data_source.kafka_options.message_format, AvroFormat
