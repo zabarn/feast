@@ -64,7 +64,7 @@ REQUIRED = [
     "pyarrow>=4,<12",
     "pydantic>=1,<2",
     "pygments>=2.12.0,<3",
-    "PyYAML>=5.4.0,<7",
+    # "PyYAML>=5.4.0,<7",
     "requests",
     "SQLAlchemy[mypy]>1,<2",
     "tabulate>=0.8.0,<1",
@@ -157,6 +157,12 @@ ELASTICSEARCH_REQUIRED = [
     "elasticsearch==8.8",
 ]
 
+CONFLUENT_REQUIRED = [
+    "pipenv",
+    "confluent-kafka>=2.0.2",
+    "pip-system-certs==4.0"
+]
+
 CI_REQUIRED = (
     [
         "build",
@@ -195,7 +201,7 @@ CI_REQUIRED = (
         "types-protobuf~=3.19.22",
         "types-python-dateutil",
         "types-pytz",
-        "types-PyYAML",
+        # "types-PyYAML",
         "types-redis",
         "types-requests",
         "types-setuptools",
@@ -218,6 +224,7 @@ CI_REQUIRED = (
     + HAZELCAST_REQUIRED
     + MILVUS_REQUIRED
     + ELASTICSEARCH_REQUIRED
+    + CONFLUENT_REQUIRED
 )
 
 
