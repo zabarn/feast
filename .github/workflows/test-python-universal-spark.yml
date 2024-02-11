@@ -1,6 +1,6 @@
 name: test-python-universal-spark
 
-on [pull_request, workflow_dispatch]:
+on: [pull_request, workflow_dispatch]:
 
 # concurrency is currently broken, see details https://github.com/actions/runner/issues/1532
 #concurrency:
