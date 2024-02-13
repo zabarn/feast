@@ -36,10 +36,16 @@ class SparkKafkaProcessor(StreamProcessor):
         self,
         *,
         fs: FeatureStore,
-        sfv: StreamFeatureView,
+        sfv: FeatureView,
         config: ProcessorConfig,
         preprocess_fn: Optional[MethodType] = None,
     ):
+
+        # In general, FeatureView may or may not have stream_source, but it must
+        # have one to use spark kafka processor
+        if not sfv.stream_source:
+            raise ValueError("Feature View must have a stream source to use spark streaming.")
+
         if not isinstance(sfv.stream_source, KafkaSource):
             raise ValueError("data source is not kafka source")
         if not isinstance(

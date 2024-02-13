@@ -16,11 +16,42 @@ import pytest
 
 from feast.entity import Entity
 from feast.value_type import ValueType
+from feast.infra.contrib.spark_kafka_processor import SparkKafkaProcessor
 
 
-def test_the_test():
-    entity = Entity(name="my-entity", description="My entity")
-    assert entity.join_key == "my-entity"
-    assert(5==5)
+def test_streaming_ingestion():
+    
+    spark_config = IntegrationTestRepoConfig(
+        provider="local",
+        online_store_creator=RedisOnlineStoreCreator,
+        offline_store_creator=SparkDataSourceCreator,
+        batch_engine={"type": "spark.engine", "partitions": 10},
+    )
+    spark_environment = construct_test_environment(
+        spark_config, None, entity_key_serialization_version=1
+    )
 
+    df = create_basic_driver_dataset()
+
+    # Make a stream source.
+    stream_source = KafkaSource(
+        name="kafka",
+        timestamp_field="event_timestamp",
+        kafka_bootstrap_servers="",
+        message_format=AvroFormat(""),
+        topic="topic",
+        batch_source=FileSource(path="some path"),
+    )
+    StreamFeatureView(
+        name="test kafka stream feature view",
+        entities=[],
+        ttl=timedelta(days=30),
+        source=stream_source,
+        aggregations=[],
+    )
+
+
+
+    # processor = SparkKafkaProcessor()
+#
 
