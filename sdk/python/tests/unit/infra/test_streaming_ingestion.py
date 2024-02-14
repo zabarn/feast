@@ -30,6 +30,10 @@ from tests.integration.feature_repos.repo_configuration import (
 from tests.integration.feature_repos.universal.online_store.redis import (
     RedisOnlineStoreCreator,
 )
+from feast.data_source import KafkaSource
+from feast.data_format import AvroFormat, ConfluentAvroFormat
+from feast import FileSource
+from feast.stream_feature_view import StreamFeatureView
 
 
 def test_streaming_ingestion():
@@ -51,7 +55,7 @@ def test_streaming_ingestion():
         name="kafka",
         timestamp_field="event_timestamp",
         kafka_bootstrap_servers="",
-        message_format=AvroFormat(""),
+        message_format=ConfluentAvroFormat(""),
         topic="topic",
         batch_source=FileSource(path="some path"),
     )
