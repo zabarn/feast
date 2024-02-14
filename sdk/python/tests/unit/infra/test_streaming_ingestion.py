@@ -14,6 +14,8 @@
 import assertpy
 import pytest
 
+from datetime import timedelta
+
 from feast.entity import Entity
 from feast.value_type import ValueType
 from feast.infra.contrib.spark_kafka_processor import SparkKafkaProcessor
