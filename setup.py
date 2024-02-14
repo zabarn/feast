@@ -159,7 +159,7 @@ ELASTICSEARCH_REQUIRED = [
 
 CONFLUENT_REQUIRED = [
     "pipenv",
-    "confluent-kafka>=2.0.2",
+    "confluent_kafka>=2.0.2",
     "pip-system-certs==4.0"
 ]
 
