@@ -11,6 +11,7 @@ from feast.data_format import AvroFormat, ConfluentAvroFormat, JsonFormat
 from feast.data_source import KafkaSource, PushMode
 from feast.expediagroup.schema_registry.schema_registry import SchemaRegistry
 from feast.feature_store import FeatureStore
+from feast.feature_view import FeatureView
 from feast.infra.contrib.stream_processor import (
     ProcessorConfig,
     StreamProcessor,
