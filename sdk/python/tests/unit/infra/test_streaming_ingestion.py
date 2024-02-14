@@ -17,6 +17,18 @@ import pytest
 from feast.entity import Entity
 from feast.value_type import ValueType
 from feast.infra.contrib.spark_kafka_processor import SparkKafkaProcessor
+from feast.infra.offline_stores.contrib.spark_offline_store.tests.data_source import (
+    SparkDataSourceCreator,
+)
+from tests.integration.feature_repos.integration_test_repo_config import (
+    IntegrationTestRepoConfig,
+)
+from tests.integration.feature_repos.repo_configuration import (
+    construct_test_environment,
+)
+from tests.integration.feature_repos.universal.online_store.redis import (
+    RedisOnlineStoreCreator,
+)
 
 
 def test_streaming_ingestion():
