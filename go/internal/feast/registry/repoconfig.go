@@ -32,6 +32,8 @@ type RepoConfig struct {
 	RepoPath string `json:"repo_path"`
 	// EntityKeySerializationVersion
 	EntityKeySerializationVersion int64 `json:"entity_key_serialization_version"`
+  // Transformation server base endpoint
+  GoTransformationsEndpoint string `json:"go_transformations_endpoint"`
 }
 
 type RegistryConfig struct {
