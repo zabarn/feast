@@ -37,6 +37,7 @@ type RepoConfig struct {
 type RegistryConfig struct {
 	RegistryStoreType string `json:"registry_store_type"`
 	Path              string `json:"path"`
+	ClientId          string `json:"client_id" default:"Unknown"`
 	CacheTtlSeconds   int64  `json:"cache_ttl_seconds" default:"600"`
 }
 
@@ -87,6 +88,12 @@ func (r *RepoConfig) GetRegistryConfig() *RegistryConfig {
 				if value, ok := v.(string); ok {
 					registryConfig.RegistryStoreType = value
 				}
+
+			case "client_id":
+				if value, ok := v.(string); ok {
+					registryConfig.ClientId = value
+				}
+
 			case "cache_ttl_seconds":
 				// cache_ttl_seconds defaulted to type float64. Ex: "cache_ttl_seconds": 60 in registryConfigMap
 				if value, ok := v.(float64); ok {
