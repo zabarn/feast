@@ -57,7 +57,7 @@ func NewFeatureStore(config *registry.RepoConfig, callback transformation.Transf
 	}
 
   var transformationService *transformation.GrpcTransformationService = nil
-  if config.GoTransformationsEndpoint != "" {
+  if config.GoTransformationsEndpoint != "" && config.GoTransformationsEndpoint != "null" {
     transformationService, _ = transformation.NewGrpcTransformationService(config, config.GoTransformationsEndpoint)
   }
 
