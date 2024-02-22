@@ -174,9 +174,6 @@ class RepoConfig(FeastBaseModel):
     go_feature_serving: Optional[bool] = False
     """ If True, use the Go feature server instead of the Python feature server. """
 
-    go_transformations_endpoint: Optional[StrictStr]
-    """ Specify the URL for the Go feature server to hit the transformations server. """
-
     go_feature_retrieval: Optional[bool] = False
     """ If True, use the embedded Go code to retrieve features instead of the Python SDK. """
 
