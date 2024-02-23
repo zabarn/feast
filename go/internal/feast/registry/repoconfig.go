@@ -2,6 +2,7 @@ package registry
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 
@@ -9,7 +10,7 @@ import (
 )
 
 const (
-	defaultCacheTtlSeconds = 600
+	defaultCacheTtlSeconds = int64(600)
 )
 
 type RepoConfig struct {
@@ -75,7 +76,7 @@ func NewRepoConfigFromFile(repoPath string) (*RepoConfig, error) {
 	return &config, nil
 }
 
-func (r *RepoConfig) GetRegistryConfig() *RegistryConfig {
+func (r *RepoConfig) GetRegistryConfig() (*RegistryConfig, error) {
 	if registryConfigMap, ok := r.Registry.(map[string]interface{}); ok {
 		registryConfig := RegistryConfig{CacheTtlSeconds: defaultCacheTtlSeconds}
 		for k, v := range registryConfigMap {
@@ -88,29 +89,28 @@ func (r *RepoConfig) GetRegistryConfig() *RegistryConfig {
 				if value, ok := v.(string); ok {
 					registryConfig.RegistryStoreType = value
 				}
-
 			case "client_id":
 				if value, ok := v.(string); ok {
 					registryConfig.ClientId = value
 				}
-
 			case "cache_ttl_seconds":
 				// cache_ttl_seconds defaulted to type float64. Ex: "cache_ttl_seconds": 60 in registryConfigMap
-				if value, ok := v.(float64); ok {
+				switch value := v.(type) {
+				case float64:
 					registryConfig.CacheTtlSeconds = int64(value)
-				}
-
-				if value, ok := v.(int32); ok {
+				case int:
 					registryConfig.CacheTtlSeconds = int64(value)
-				}
-
-				if value, ok := v.(int64); ok {
+				case int32:
+					registryConfig.CacheTtlSeconds = int64(value)
+				case int64:
 					registryConfig.CacheTtlSeconds = value
+				default:
+					return nil, fmt.Errorf("unexpected type %T for CacheTtlSeconds", v)
 				}
 			}
 		}
-		return &registryConfig
+		return &registryConfig, nil
 	} else {
-		return &RegistryConfig{Path: r.Registry.(string), CacheTtlSeconds: defaultCacheTtlSeconds}
+		return &RegistryConfig{Path: r.Registry.(string), CacheTtlSeconds: defaultCacheTtlSeconds}, nil
 	}
 }
