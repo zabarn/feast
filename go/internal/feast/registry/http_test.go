@@ -3,6 +3,7 @@ package registry
 import (
 	"net/http"
 	"net/http/httptest"
+	"testing"
 
 	"github.com/feast-dev/feast/go/protos/feast/core"
 )
