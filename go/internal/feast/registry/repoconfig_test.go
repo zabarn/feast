@@ -187,6 +187,7 @@ func TestGetRegistryConfig_String(t *testing.T) {
 	// Assert that the method correctly processed the string
 	assert.Equal(t, "data/registry.db", registryConfig.Path)
 	assert.Equal(t, defaultClientID, registryConfig.ClientId)
+	println(registryConfig.CacheTtlSeconds)
 	assert.Empty(t, registryConfig.RegistryStoreType)
 	assert.Equal(t, defaultCacheTtlSeconds, registryConfig.CacheTtlSeconds)
 }

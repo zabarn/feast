@@ -79,7 +79,7 @@ func NewRepoConfigFromFile(repoPath string) (*RepoConfig, error) {
 
 func (r *RepoConfig) GetRegistryConfig() (*RegistryConfig, error) {
 	if registryConfigMap, ok := r.Registry.(map[string]interface{}); ok {
-		registryConfig := RegistryConfig{CacheTtlSeconds: defaultCacheTtlSeconds}
+		registryConfig := RegistryConfig{CacheTtlSeconds: defaultCacheTtlSeconds, ClientId: defaultClientID}
 		for k, v := range registryConfigMap {
 			switch k {
 			case "path":
@@ -112,6 +112,6 @@ func (r *RepoConfig) GetRegistryConfig() (*RegistryConfig, error) {
 		}
 		return &registryConfig, nil
 	} else {
-		return &RegistryConfig{Path: r.Registry.(string), CacheTtlSeconds: defaultCacheTtlSeconds}, nil
+		return &RegistryConfig{Path: r.Registry.(string), ClientId: defaultClientID, CacheTtlSeconds: defaultCacheTtlSeconds}, nil
 	}
 }
