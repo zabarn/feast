@@ -17,21 +17,21 @@ func TestNewHttpRegistryStore(t *testing.T) {
 	defer mockServer.Close()
 
 	// Configure the test
-	config := &registry.RegistryConfig{
+	config := &RegistryConfig{
 		Path:     mockServer.URL,
 		ClientId: "test-client",
 	}
 	project := "test-project"
 
 	// Test NewHttpRegistryStore with a valid configuration
-	_, err := registry.NewHttpRegistryStore(config, project)
+	_, err := NewHttpRegistryStore(config, project)
 	if err != nil {
 		t.Errorf("Expected no error, but got: %v", err)
 	}
 
 	// Test NewHttpRegistryStore with an invalid configuration (simulating connection error)
 	config.Path = "invalid-url"
-	_, err = registry.NewHttpRegistryStore(config, project)
+	_, err = NewHttpRegistryStore(config, project)
 	if err == nil {
 		t.Error("Expected an error, but got nil")
 	}
@@ -46,7 +46,7 @@ func TestHttpRegistryStore_LoadEntities(t *testing.T) {
 	defer mockServer.Close()
 
 	// Create HttpRegistryStore with mock server configuration
-	hrs := &registry.HttpRegistryStore{
+	hrs := &HttpRegistryStore{
 		project:  "test-project",
 		endpoint: mockServer.URL,
 		clientId: "test-client",
