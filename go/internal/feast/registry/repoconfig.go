@@ -11,6 +11,7 @@ import (
 
 const (
 	defaultCacheTtlSeconds = int64(600)
+	defaultClientID        = "Unknown"
 )
 
 type RepoConfig struct {
