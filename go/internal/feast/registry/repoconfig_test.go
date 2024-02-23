@@ -53,6 +53,7 @@ func TestNewRepoConfigRegistryMap(t *testing.T) {
 	data := []byte(`
 registry:
  path: data/registry.db
+ client_id: "test_client_id"
 project: feature_repo
 provider: local
 online_store:
@@ -67,6 +68,7 @@ online_store:
 	assert.Equal(t, "feature_repo", config.Project)
 	assert.Equal(t, dir, config.RepoPath)
 	assert.Equal(t, "data/registry.db", registryConfig.Path)
+	assert.Equal(t, "test_client_id", registryConfig.ClientId)
 	assert.Equal(t, "local", config.Provider)
 	assert.Equal(t, map[string]interface{}{
 		"type":              "redis",
@@ -87,6 +89,7 @@ func TestNewRepoConfigRegistryConfig(t *testing.T) {
 	data := []byte(`
 registry:
  path: data/registry.db
+ client_id: "test_client_id"
 project: feature_repo
 provider: local
 online_store:
@@ -100,6 +103,7 @@ online_store:
 	assert.Nil(t, err)
 	assert.Equal(t, dir, config.RepoPath)
 	assert.Equal(t, "data/registry.db", registryConfig.Path)
+	assert.Equal(t, "test_client_id", registryConfig.ClientId)
 }
 func TestNewRepoConfigFromJSON(t *testing.T) {
 	// Create a temporary directory for the test
@@ -154,6 +158,7 @@ func TestGetRegistryConfig_Map(t *testing.T) {
 		Registry: map[string]interface{}{
 			"path":                "data/registry.db",
 			"registry_store_type": "local",
+			"client_id":           "test_client_id",
 			"cache_ttl_seconds":   60,
 		},
 	}
@@ -167,6 +172,7 @@ func TestGetRegistryConfig_Map(t *testing.T) {
 	assert.Equal(t, "data/registry.db", registryConfig.Path)
 	assert.Equal(t, "local", registryConfig.RegistryStoreType)
 	assert.Equal(t, int64(60), registryConfig.CacheTtlSeconds)
+	assert.Equal(t, "test_client_id", registryConfig.ClientId)
 }
 
 func TestGetRegistryConfig_String(t *testing.T) {
@@ -180,6 +186,7 @@ func TestGetRegistryConfig_String(t *testing.T) {
 
 	// Assert that the method correctly processed the string
 	assert.Equal(t, "data/registry.db", registryConfig.Path)
+	assert.Equal(t, "Unknown", registryConfig.ClientId)
 	assert.Empty(t, registryConfig.RegistryStoreType)
 	assert.Equal(t, defaultCacheTtlSeconds, registryConfig.CacheTtlSeconds)
 }
