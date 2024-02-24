@@ -12,6 +12,84 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+func TestMakeHttpRequestReturnsResponseOnSuccess(t *testing.T) {
+	// Create a new HttpRegistryStore
+	store := &HttpRegistryStore{
+		endpoint: "http://localhost",
+		project:  "test_project",
+	}
+
+	// Create a mock HTTP server
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	// Call the method under test
+	resp, err := store.makeHttpRequest(server.URL)
+
+	// Assert that there was no error and the response status is OK
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+}
+
+func TestMakeHttpRequestReturnsErrorOnInvalidUrl(t *testing.T) {
+	// Create a new HttpRegistryStore
+	store := &HttpRegistryStore{
+		endpoint: "http://localhost",
+		project:  "test_project",
+	}
+
+	// Call the method under test with an invalid URL
+	resp, err := store.makeHttpRequest("http://invalid_url")
+
+	// Assert that there was an error
+	assert.NotNil(t, err)
+	assert.Nil(t, resp)
+}
+
+func TestMakeHttpRequestReturnsErrorOnNonOkStatus(t *testing.T) {
+	// Create a new HttpRegistryStore
+	store := &HttpRegistryStore{
+		endpoint: "http://localhost",
+		project:  "test_project",
+	}
+
+	// Create a mock HTTP server that returns a status code other than OK
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	// Call the method under test
+	resp, err := store.makeHttpRequest(server.URL)
+
+	// Assert that there was an error and the response status is InternalServerError
+	assert.NotNil(t, err)
+	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+}
+func TestMakeHttpRequestIncludesClientId(t *testing.T) {
+	// Create a new HttpRegistryStore
+	store := &HttpRegistryStore{
+		endpoint: "http://localhost",
+		project:  "test_project",
+		clientId: "test_client_id",
+	}
+
+	// Create a mock HTTP server
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Assert that the request includes the correct Client-Id header
+		assert.Equal(t, "test_client_id", r.Header.Get("Client-Id"))
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	// Call the method under test
+	_, err := store.makeHttpRequest(server.URL)
+
+	// Assert that there was no error
+	assert.Nil(t, err)
+}
 func TestLoadProtobufMessages(t *testing.T) {
 	// Create a mock HTTP server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
