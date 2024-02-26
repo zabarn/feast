@@ -243,8 +243,7 @@ class OnDemandFeatureViewModel(BaseFeatureViewModel):
         odfv = OnDemandFeatureView(
             name=self.name,
             schema=[sch.to_field() for sch in self.features],
-            sources=list(source_feature_view_projections.values())
-                    + list(source_request_sources.values()),
+            sources=list(source_feature_view_projections.values()) + list(source_request_sources.values()),
             udf=dill.loads(bytes.fromhex(self.udf)),
             udf_string=self.udf_string,
             description=self.description,
@@ -295,7 +294,7 @@ class OnDemandFeatureViewModel(BaseFeatureViewModel):
             description=on_demand_feature_view.description,
             tags=on_demand_feature_view.tags,
             owner=on_demand_feature_view.owner,
-            created_timestamp = on_demand_feature_view.created_timestamp,
-            last_updated_timestamp = on_demand_feature_view.last_updated_timestamp
+            created_timestamp=on_demand_feature_view.created_timestamp,
+            last_updated_timestamp=on_demand_feature_view.last_updated_timestamp
 
         )
