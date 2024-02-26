@@ -32,6 +32,8 @@ type RepoConfig struct {
 	RepoPath string `json:"repo_path"`
 	// EntityKeySerializationVersion
 	EntityKeySerializationVersion int64 `json:"entity_key_serialization_version"`
+  // If false, use gopy bindings to calculate ODFV transformations
+  GoTransformationsServer bool `json:"go_transformations_server"`
   // Transformation server base endpoint
   GoTransformationsEndpoint string `json:"go_transformations_endpoint"`
 }

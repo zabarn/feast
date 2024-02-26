@@ -56,10 +56,14 @@ func NewFeatureStore(config *registry.RepoConfig, callback transformation.Transf
 		return nil, err
 	}
 
-  var transformationService *transformation.GrpcTransformationService = nil
-  if config.GoTransformationsEndpoint != "" && config.GoTransformationsEndpoint != "null" {
-    transformationService, _ = transformation.NewGrpcTransformationService(config, config.GoTransformationsEndpoint)
-  }
+	if config.GoTransformationsEndpoint == "" && config.GoTransformationsServer {
+		return nil, errors.New("transformations server endpoint is missing")
+	}
+
+	var transformationService *transformation.GrpcTransformationService = nil
+	if config.GoTransformationsEndpoint != "" {
+		transformationService, _ = transformation.NewGrpcTransformationService(config, config.GoTransformationsEndpoint)
+	}
 
 	return &FeatureStore{
 		config:                 config,
