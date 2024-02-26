@@ -106,7 +106,7 @@ class FeatureViewModel(BaseFeatureViewModel):
             online=self.online,
             description=self.description,
             tags=self.tags if self.tags else None,
-            owner=self.owner
+            owner=self.owner,
         )
         feature_view.materialization_intervals = self.materialization_intervals
         feature_view.created_timestamp = self.created_timestamp
@@ -116,8 +116,8 @@ class FeatureViewModel(BaseFeatureViewModel):
 
     @classmethod
     def from_feature_view(
-            cls,
-            feature_view: FeatureView,
+        cls,
+        feature_view: FeatureView,
     ) -> Self:  # type: ignore
         """
         Converts a FeatureView object to its pydantic model representation.
@@ -165,7 +165,7 @@ class FeatureViewModel(BaseFeatureViewModel):
             owner=feature_view.owner,
             materialization_intervals=feature_view.materialization_intervals,
             created_timestamp=feature_view.created_timestamp,
-            last_updated_timestamp=feature_view.last_updated_timestamp
+            last_updated_timestamp=feature_view.last_updated_timestamp,
         )
 
 
@@ -181,19 +181,18 @@ class FeatureViewProjectionModel(BaseModel):
     join_key_map: Dict[str, str]
 
     def to_feature_view_projection(self) -> FeatureViewProjection:
-        fv_proj = FeatureViewProjection(
+        return FeatureViewProjection(
             name=self.name,
             name_alias=self.name_alias,
             desired_features=self.desired_features,
             features=[sch.to_field() for sch in self.features],
-            join_key_map=self.join_key_map
+            join_key_map=self.join_key_map,
         )
-        return fv_proj
 
     @classmethod
     def from_feature_view_projection(
-            cls,
-            feature_view_projection: FeatureViewProjection,
+        cls,
+        feature_view_projection: FeatureViewProjection,
     ) -> Self:  # type: ignore
         return cls(
             name=feature_view_projection.name,
@@ -203,7 +202,7 @@ class FeatureViewProjectionModel(BaseModel):
                 FieldModel.from_field(feature)
                 for feature in feature_view_projection.features
             ],
-            join_key_map=feature_view_projection.join_key_map
+            join_key_map=feature_view_projection.join_key_map,
         )
 
 
@@ -233,8 +232,8 @@ class OnDemandFeatureViewModel(BaseFeatureViewModel):
         source_feature_view_projections = dict()
         if self.source_feature_view_projections:
             for (
-                    key,
-                    feature_view_projection,
+                key,
+                feature_view_projection,
             ) in self.source_feature_view_projections.items():
                 source_feature_view_projections[
                     key
@@ -243,12 +242,13 @@ class OnDemandFeatureViewModel(BaseFeatureViewModel):
         odfv = OnDemandFeatureView(
             name=self.name,
             schema=[sch.to_field() for sch in self.features],
-            sources=list(source_feature_view_projections.values()) + list(source_request_sources.values()),
+            sources=list(source_feature_view_projections.values())
+            + list(source_request_sources.values()),
             udf=dill.loads(bytes.fromhex(self.udf)),
             udf_string=self.udf_string,
             description=self.description,
             tags=self.tags,
-            owner=self.owner
+            owner=self.owner,
         )
         odfv.created_timestamp = self.created_timestamp
         odfv.last_updated_timestamp = self.last_updated_timestamp
@@ -256,14 +256,14 @@ class OnDemandFeatureViewModel(BaseFeatureViewModel):
 
     @classmethod
     def from_feature_view(
-            cls,
-            on_demand_feature_view: OnDemandFeatureView,
+        cls,
+        on_demand_feature_view: OnDemandFeatureView,
     ) -> Self:  # type: ignore
         source_request_sources = dict()
         if on_demand_feature_view.source_request_sources:
             for (
-                    key,
-                    req_data_source,
+                key,
+                req_data_source,
             ) in on_demand_feature_view.source_request_sources.items():
                 source_request_sources[key] = RequestSourceModel.from_data_source(
                     req_data_source
@@ -272,8 +272,8 @@ class OnDemandFeatureViewModel(BaseFeatureViewModel):
         source_feature_view_projections = dict()
         if on_demand_feature_view.source_feature_view_projections:
             for (
-                    key,
-                    feature_view_projection,
+                key,
+                feature_view_projection,
             ) in on_demand_feature_view.source_feature_view_projections.items():
                 source_feature_view_projections[
                     key
@@ -295,6 +295,5 @@ class OnDemandFeatureViewModel(BaseFeatureViewModel):
             tags=on_demand_feature_view.tags,
             owner=on_demand_feature_view.owner,
             created_timestamp=on_demand_feature_view.created_timestamp,
-            last_updated_timestamp=on_demand_feature_view.last_updated_timestamp
-
+            last_updated_timestamp=on_demand_feature_view.last_updated_timestamp,
         )
