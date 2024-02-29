@@ -180,7 +180,7 @@ class RepoConfig(FeastBaseModel):
     go_transformations_server: Optional[bool] = True
     """ If True, use the transformations server to perform ODVF transformations in Go feature server. """
 
-    go_transformations_endpoint: Optional[StrictStr] = ''
+    go_transformations_endpoint: Optional[StrictStr] = ""
     """ Specify the endpoint for Go feature server to find the transformations server.
     NOTE: Unless go_transformations_server is False, the Go feature server will throw errors if this is
     blank or null. """
