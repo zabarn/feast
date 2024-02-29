@@ -120,6 +120,6 @@ go_transformations_server: True
 	config, err := NewRepoConfigFromFile(dir)
 	assert.Nil(t, err)
 	assert.Equal(t, dir, config.RepoPath)
-  assert.Equal(t, "https://go.dev:9999", config.GoTransformationsEndpoint)
-  assert.Equal(t, true, config.GoTransformationsServer)
+	assert.Equal(t, "https://go.dev:9999", config.GoTransformationsEndpoint)
+	assert.Equal(t, true, config.GoTransformationsServer)
 }
