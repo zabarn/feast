@@ -75,11 +75,11 @@ class SparkOfflineStore(OfflineStore):
         assert isinstance(config.offline_store, SparkOfflineStoreConfig)
         assert isinstance(data_source, SparkSource)
 
-        warnings.warn(
-            "The spark offline store is an experimental feature in alpha development. "
-            "Some functionality may still be unstable so functionality can change in the future.",
-            RuntimeWarning,
-        )
+        # warnings.warn(
+        #     "The spark offline store is an experimental feature in alpha development. "
+        #     "Some functionality may still be unstable so functionality can change in the future.",
+        #     RuntimeWarning,
+        # )
 
         print("Pulling latest features from spark offline store")
 
@@ -134,11 +134,11 @@ class SparkOfflineStore(OfflineStore):
         for fv in feature_views:
             assert isinstance(fv.batch_source, SparkSource)
 
-        warnings.warn(
-            "The spark offline store is an experimental feature in alpha development. "
-            "Some functionality may still be unstable so functionality can change in the future.",
-            RuntimeWarning,
-        )
+        # warnings.warn(
+        #     "The spark offline store is an experimental feature in alpha development. "
+        #     "Some functionality may still be unstable so functionality can change in the future.",
+        #     RuntimeWarning,
+        # )
 
         spark_session = get_spark_session_or_start_new_with_repoconfig(
             store_config=config.offline_store
@@ -276,11 +276,11 @@ class SparkOfflineStore(OfflineStore):
         """
         assert isinstance(config.offline_store, SparkOfflineStoreConfig)
         assert isinstance(data_source, SparkSource)
-        warnings.warn(
-            "The spark offline store is an experimental feature in alpha development. "
-            "This API is unstable and it could and most probably will be changed in the future.",
-            RuntimeWarning,
-        )
+        # warnings.warn(
+        #     "The spark offline store is an experimental feature in alpha development. "
+        #     "This API is unstable and it could and most probably will be changed in the future.",
+        #     RuntimeWarning,
+        # )
 
         spark_session = get_spark_session_or_start_new_with_repoconfig(
             store_config=config.offline_store
