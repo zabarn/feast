@@ -148,15 +148,14 @@ func NewHttpServer(fs *feast.FeatureStore, loggingService *logging.LoggingServic
 }
 func logWithSpanContext(span tracer.Span) zerolog.Logger {
 
-	logger := zerolog.New(os.Stderr).With().Timestamp().Logger()
+	spanContext := span.Context()
 
-	if span != nil {
-		spanContext := span.Context()
-		logger = logger.With().
-			Int64("trace_id", int64(spanContext.TraceID())).
-			Int64("span_id", int64(spanContext.SpanID())).
-			Logger()
-	}
+	var logger = zerolog.New(os.Stderr).With().
+		Int64("trace_id", int64(spanContext.TraceID())).
+		Int64("span_id", int64(spanContext.SpanID())).
+		Timestamp().
+		Logger()
+
 	return logger
 }
 func (s *httpServer) getOnlineFeatures(w http.ResponseWriter, r *http.Request) {
