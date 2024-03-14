@@ -148,11 +148,15 @@ func NewHttpServer(fs *feast.FeatureStore, loggingService *logging.LoggingServic
 }
 func logWithSpanContext(span tracer.Span) zerolog.Logger {
 
-	logger := zerolog.New(os.Stderr).With().
-		Int64("trace_id", int64(span.Context().TraceID())).
-		Int64("span_id", int64(span.Context().SpanID())).
-		Logger()
+	logger := zerolog.New(os.Stderr).With().Timestamp().Logger()
 
+	if span != nil {
+		spanContext := span.Context()
+		logger = logger.With().
+			Int64("trace_id", int64(spanContext.TraceID())).
+			Int64("span_id", int64(spanContext.SpanID())).
+			Logger()
+	}
 	return logger
 }
 func (s *httpServer) getOnlineFeatures(w http.ResponseWriter, r *http.Request) {
@@ -323,8 +327,8 @@ func logStackTrace() {
 
 func writeJSONError(w http.ResponseWriter, err error, statusCode int) {
 	errMap := map[string]interface{}{
-		"error":  fmt.Sprintf("%+v", err),
-		"status": statusCode,
+		"error":       fmt.Sprintf("%+v", err),
+		"status_code": statusCode,
 	}
 	errJSON, _ := json.Marshal(errMap)
 
@@ -337,11 +341,11 @@ func recoverMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if r := recover(); r != nil {
-				log.Printf("Panic recovered: %v", r)
+				log.Error().Err(fmt.Errorf("Panic recovered: %v", r)).Msg("A panic occurred in the server")
 				// Log the stack trace
 				logStackTrace()
 
-				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				writeJSONError(w, fmt.Errorf("Internal Server Error: %v", r), http.StatusInternalServerError)
 			}
 		}()
 		next.ServeHTTP(w, r)
@@ -362,7 +366,7 @@ func (s *httpServer) Serve(host string, port int) error {
 	if err == http.ErrServerClosed {
 		return nil
 	}
-	log.Error().Stack().Err(err).Msg("Startup failed")
+	log.Fatal().Stack().Err(err).Msg("Failed to start HTTP server")
 	return err
 }
 
