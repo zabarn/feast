@@ -212,7 +212,7 @@ class RepoConfig(FeastBaseModel):
             elif data["provider"] == "azure":
                 self._offline_config = "mssql"
             elif data["provider"] == "expedia":
-                spark_config = {
+                spark_offline_config = {
                     "type": "spark",
                     "spark_conf": {
                         "spark.sql.catalog.spark_catalog": "org.apache.iceberg.spark.SparkCatalog",
@@ -220,7 +220,7 @@ class RepoConfig(FeastBaseModel):
                         "spark.sql.iceberg.handle-timestamp-without-timezone": "true",
                     },
                 }
-                self._offline_config = spark_config
+                self._offline_config = spark_offline_config
 
         self._online_store = None
         if "online_store" in data:
@@ -366,6 +366,8 @@ class RepoConfig(FeastBaseModel):
                 values["online_store"]["type"] = "datastore"
             elif values["provider"] == "aws":
                 values["online_store"]["type"] = "dynamodb"
+            elif values["provider"] == "expedia":
+                values["online_store"]["type"] = "redis"
 
         online_store_type = values["online_store"]["type"]
 
