@@ -46,7 +46,6 @@ class SparkMaterializationEngineConfig(FeastConfigBaseModel):
 
     batch_size: int = 10000
     """Batch size determines the number of rows to be written to the online store in a single batch per partitions.
-       Adjust this value based on the number of parallel executors defined so that the online store can handle the load.
        To overwrite at each feature view level, set the tag 'batch_size' in the feature view definition."""
 
 
