@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -19,6 +20,7 @@ import (
 
 	"github.com/feast-dev/feast/go/protos/feast/serving"
 	"github.com/feast-dev/feast/go/protos/feast/types"
+	redistrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/redis/go-redis.v9"
 )
 
 type redisType int
@@ -102,6 +104,11 @@ func NewRedisOnlineStore(project string, config *registry.RepoConfig, onlineStor
 		}
 	}
 
+	serviceName := os.Getenv("DD_SERVICE") + "-redis"
+	if serviceName == "" {
+		serviceName = "redis.client" // default service name if DD_SERVICE is not set
+	}
+
 	if redisStoreType == redisNode {
 		store.client = redis.NewClient(&redis.Options{
 			Addr:      address[0],
@@ -109,6 +116,7 @@ func NewRedisOnlineStore(project string, config *registry.RepoConfig, onlineStor
 			DB:        db,
 			TLSConfig: tlsConfig,
 		})
+		redistrace.WrapClient(store.client, redistrace.WithServiceName(serviceName))
 	} else if redisStoreType == redisCluster {
 		store.clusterClient = redis.NewClusterClient(&redis.ClusterOptions{
 			Addrs:     []string{address[0]},
@@ -116,6 +124,7 @@ func NewRedisOnlineStore(project string, config *registry.RepoConfig, onlineStor
 			TLSConfig: tlsConfig,
 			ReadOnly:  true,
 		})
+		redistrace.WrapClient(store.clusterClient, redistrace.WithServiceName(serviceName))
 	}
 
 	return &store, nil
