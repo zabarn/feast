@@ -236,20 +236,17 @@ func CallTransformations(
 func EnsureRequestedDataExist(requestedOnDemandFeatureViews []*model.OnDemandFeatureView,
 	requestDataFeatures map[string]*prototypes.RepeatedValue) error {
 
-	log.Info().Msgf("requestedOnDemandFeatureViews %v", requestedOnDemandFeatureViews)
 	neededRequestData, err := getNeededRequestData(requestedOnDemandFeatureViews)
 	if err != nil {
 		return err
 	}
-	log.Info().Msgf("neededRequestData %v", neededRequestData)
 	missingFeatures := make([]string, 0)
 	for feature := range neededRequestData {
 		if _, ok := requestDataFeatures[feature]; !ok {
 			missingFeatures = append(missingFeatures, feature)
 		}
-		log.Info().Msgf("feature %s", feature)
-		log.Info().Msgf("requestDataFeature values %v", requestDataFeatures[feature])
 	}
+
 	if len(missingFeatures) > 0 {
 		return fmt.Errorf("requestDataNotFoundInEntityRowsException: %s", strings.Join(missingFeatures, ", "))
 	}
