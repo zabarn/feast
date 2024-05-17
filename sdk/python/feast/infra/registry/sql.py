@@ -200,20 +200,12 @@ class SqlRegistryConfig(RegistryConfig):
     If registry_type is 'sql', then this is a database URL as expected by SQLAlchemy """
 
 
-def _sanitize_search_params(**kwargs):
-    search_params = {}
-    for key, value in kwargs.items():
-        if value is not None:
-            search_params[key] = value
-    return search_params
-
-
 class SqlRegistry(BaseRegistry):
     def __init__(
-            self,
-            registry_config: Optional[Union[RegistryConfig, SqlRegistryConfig]],
-            project: str = None,
-            repo_path: Optional[Path] = None,
+        self,
+        registry_config: Optional[Union[RegistryConfig, SqlRegistryConfig]],
+        project: str = None,
+        repo_path: Optional[Path] = None,
     ):
         assert registry_config is not None, "SqlRegistry needs a valid registry_config"
         # pool_recycle will recycle connections after the given number of seconds has passed
@@ -369,7 +361,7 @@ class SqlRegistry(BaseRegistry):
         )
 
     def list_stream_feature_views(
-            self, project: str, allow_cache: bool = False
+        self, project: str, allow_cache: bool = False
     ) -> List[StreamFeatureView]:
         if allow_cache:
             self._check_if_registry_refreshed()
@@ -415,7 +407,7 @@ class SqlRegistry(BaseRegistry):
         )
 
     def get_feature_view(
-            self, name: str, project: str, allow_cache: bool = False
+        self, name: str, project: str, allow_cache: bool = False
     ) -> FeatureView:
         if allow_cache:
             self._check_if_registry_refreshed()
@@ -434,7 +426,7 @@ class SqlRegistry(BaseRegistry):
         )
 
     def get_on_demand_feature_view(
-            self, name: str, project: str, allow_cache: bool = False
+        self, name: str, project: str, allow_cache: bool = False
     ) -> OnDemandFeatureView:
         if allow_cache:
             self._check_if_registry_refreshed()
@@ -453,7 +445,7 @@ class SqlRegistry(BaseRegistry):
         )
 
     def get_request_feature_view(
-            self, name: str, project: str, allow_cache: bool = False
+        self, name: str, project: str, allow_cache: bool = False
     ):
         if allow_cache:
             self._check_if_registry_refreshed()
@@ -472,7 +464,7 @@ class SqlRegistry(BaseRegistry):
         )
 
     def get_feature_service(
-            self, name: str, project: str, allow_cache: bool = False
+        self, name: str, project: str, allow_cache: bool = False
     ) -> FeatureService:
         if allow_cache:
             self._check_if_registry_refreshed()
@@ -491,7 +483,7 @@ class SqlRegistry(BaseRegistry):
         )
 
     def get_saved_dataset(
-            self, name: str, project: str, allow_cache: bool = False
+        self, name: str, project: str, allow_cache: bool = False
     ) -> SavedDataset:
         if allow_cache:
             self._check_if_registry_refreshed()
@@ -510,7 +502,7 @@ class SqlRegistry(BaseRegistry):
         )
 
     def get_validation_reference(
-            self, name: str, project: str, allow_cache: bool = False
+        self, name: str, project: str, allow_cache: bool = False
     ) -> ValidationReference:
         if allow_cache:
             self._check_if_registry_refreshed()
@@ -529,7 +521,7 @@ class SqlRegistry(BaseRegistry):
         )
 
     def list_validation_references(
-            self, project: str, allow_cache: bool = False
+        self, project: str, allow_cache: bool = False
     ) -> List[ValidationReference]:
         if allow_cache:
             self._check_if_registry_refreshed()
@@ -583,7 +575,7 @@ class SqlRegistry(BaseRegistry):
         )
 
     def get_data_source(
-            self, name: str, project: str, allow_cache: bool = False
+        self, name: str, project: str, allow_cache: bool = False
     ) -> DataSource:
         if allow_cache:
             self._check_if_registry_refreshed()
@@ -602,7 +594,7 @@ class SqlRegistry(BaseRegistry):
         )
 
     def list_data_sources(
-            self, project: str, allow_cache: bool = False
+        self, project: str, allow_cache: bool = False
     ) -> List[DataSource]:
         if allow_cache:
             self._check_if_registry_refreshed()
@@ -614,14 +606,14 @@ class SqlRegistry(BaseRegistry):
         )
 
     def apply_data_source(
-            self, data_source: DataSource, project: str, commit: bool = True
+        self, data_source: DataSource, project: str, commit: bool = True
     ):
         return self._apply_object(
             data_sources, project, "data_source_name", data_source, "data_source_proto"
         )
 
     def apply_feature_view(
-            self, feature_view: BaseFeatureView, project: str, commit: bool = True
+        self, feature_view: BaseFeatureView, project: str, commit: bool = True
     ):
         fv_table = self._infer_fv_table(feature_view)
 
@@ -630,7 +622,7 @@ class SqlRegistry(BaseRegistry):
         )
 
     def apply_feature_service(
-            self, feature_service: FeatureService, project: str, commit: bool = True
+        self, feature_service: FeatureService, project: str, commit: bool = True
     ):
         return self._apply_object(
             feature_services,
@@ -651,7 +643,7 @@ class SqlRegistry(BaseRegistry):
                 raise DataSourceObjectNotFoundException(name, project)
 
     def list_feature_services(
-            self, project: str, allow_cache: bool = False
+        self, project: str, allow_cache: bool = False
     ) -> List[FeatureService]:
         if allow_cache:
             self._check_if_registry_refreshed()
@@ -667,7 +659,7 @@ class SqlRegistry(BaseRegistry):
         )
 
     def list_feature_views(
-            self, project: str, allow_cache: bool = False
+        self, project: str, allow_cache: bool = False
     ) -> List[FeatureView]:
         if allow_cache:
             self._check_if_registry_refreshed()
@@ -679,7 +671,7 @@ class SqlRegistry(BaseRegistry):
         )
 
     def list_saved_datasets(
-            self, project: str, allow_cache: bool = False
+        self, project: str, allow_cache: bool = False
     ) -> List[SavedDataset]:
         if allow_cache:
             self._check_if_registry_refreshed()
@@ -695,7 +687,7 @@ class SqlRegistry(BaseRegistry):
         )
 
     def list_request_feature_views(
-            self, project: str, allow_cache: bool = False
+        self, project: str, allow_cache: bool = False
     ) -> List[RequestFeatureView]:
         if allow_cache:
             self._check_if_registry_refreshed()
@@ -711,7 +703,7 @@ class SqlRegistry(BaseRegistry):
         )
 
     def list_on_demand_feature_views(
-            self, project: str, allow_cache: bool = False
+        self, project: str, allow_cache: bool = False
     ) -> List[OnDemandFeatureView]:
         if allow_cache:
             self._check_if_registry_refreshed()
@@ -727,7 +719,7 @@ class SqlRegistry(BaseRegistry):
         )
 
     def list_project_metadata(
-            self, project: str, allow_cache: bool = False
+        self, project: str, allow_cache: bool = False
     ) -> List[ProjectMetadata]:
         if allow_cache:
             self._check_if_registry_refreshed()
@@ -746,8 +738,8 @@ class SqlRegistry(BaseRegistry):
                         project_metadata.project_uuid = row["metadata_value"]
 
                     if (
-                            row["metadata_key"]
-                            == FeastMetadataKeys.LAST_UPDATED_TIMESTAMP.value
+                        row["metadata_key"]
+                        == FeastMetadataKeys.LAST_UPDATED_TIMESTAMP.value
                     ):
                         project_metadata.last_updated_timestamp = (
                             datetime.utcfromtimestamp(int(row["metadata_value"]))
@@ -758,10 +750,10 @@ class SqlRegistry(BaseRegistry):
         return []
 
     def apply_saved_dataset(
-            self,
-            saved_dataset: SavedDataset,
-            project: str,
-            commit: bool = True,
+        self,
+        saved_dataset: SavedDataset,
+        project: str,
+        commit: bool = True,
     ):
         return self._apply_object(
             saved_datasets,
@@ -772,10 +764,10 @@ class SqlRegistry(BaseRegistry):
         )
 
     def apply_validation_reference(
-            self,
-            validation_reference: ValidationReference,
-            project: str,
-            commit: bool = True,
+        self,
+        validation_reference: ValidationReference,
+        project: str,
+        commit: bool = True,
     ):
         return self._apply_object(
             validation_references,
@@ -786,12 +778,12 @@ class SqlRegistry(BaseRegistry):
         )
 
     def apply_materialization(
-            self,
-            feature_view: FeatureView,
-            project: str,
-            start_date: datetime,
-            end_date: datetime,
-            commit: bool = True,
+        self,
+        feature_view: FeatureView,
+        project: str,
+        start_date: datetime,
+        end_date: datetime,
+        commit: bool = True,
     ):
         table = self._infer_fv_table(feature_view)
         python_class, proto_class = self._infer_fv_classes(feature_view)
@@ -850,10 +842,10 @@ class SqlRegistry(BaseRegistry):
         return Infra()
 
     def apply_user_metadata(
-            self,
-            project: str,
-            feature_view: BaseFeatureView,
-            metadata_bytes: Optional[bytes],
+        self,
+        project: str,
+        feature_view: BaseFeatureView,
+        metadata_bytes: Optional[bytes],
     ):
         table = self._infer_fv_table(feature_view)
 
@@ -912,7 +904,7 @@ class SqlRegistry(BaseRegistry):
         return python_class, proto_class
 
     def get_user_metadata(
-            self, project: str, feature_view: BaseFeatureView
+        self, project: str, feature_view: BaseFeatureView
     ) -> Optional[bytes]:
         table = self._infer_fv_table(feature_view)
 
@@ -968,7 +960,7 @@ class SqlRegistry(BaseRegistry):
 
         # Use a ThreadPoolExecutor to process projects concurrently
         with concurrent.futures.ThreadPoolExecutor(
-                max_workers=MAX_WORKERS
+            max_workers=MAX_WORKERS
         ) as executor:  # Adjust max_workers as needed
             executor.map(process_project, projects)
 
@@ -985,13 +977,13 @@ class SqlRegistry(BaseRegistry):
         pass
 
     def _apply_object(
-            self,
-            table: Table,
-            project: str,
-            id_field_name: str,
-            obj: Any,
-            proto_field_name: str,
-            name: Optional[str] = None,
+        self,
+        table: Table,
+        project: str,
+        id_field_name: str,
+        obj: Any,
+        proto_field_name: str,
+        name: Optional[str] = None,
     ):
         name = name or (obj.name if hasattr(obj, "name") else None)
         assert name, f"name needs to be provided for {obj}"
@@ -1026,7 +1018,7 @@ class SqlRegistry(BaseRegistry):
                 obj_proto = obj.to_proto()
 
                 if hasattr(obj_proto, "meta") and hasattr(
-                        obj_proto.meta, "created_timestamp"
+                    obj_proto.meta, "created_timestamp"
                 ):
                     obj_proto.meta.created_timestamp.FromDatetime(update_datetime)
 
@@ -1072,48 +1064,70 @@ class SqlRegistry(BaseRegistry):
         if new_project:
             self._set_last_updated_metadata(update_datetime, project)
 
-    def search(self, **kwargs) -> List[Union[FeatureView, ProjectMetadata]]:
+    def search(
+        self,
+        name="",
+        application="",
+        owning_team="",
+        created_at=datetime(1, 1, 1),
+        updated_at=datetime(1, 1, 1),
+        online=True,
+    ) -> List[Union[FeatureView, ProjectMetadata]]:
         """
-        Search for feature views or projects based on the provided search parameters.
-        Since the SQL database stores only metadata and protos, we have to pull all potentially matching objects
-        and filter in memory.
+        Search for feature views or projects based on the provided search
+        parameters. Since the SQL database stores only metadata and protos, we
+        have to pull all potentially matching objects and filter in memory.
         """
-
-        search_params = _sanitize_search_params(**kwargs)
-
-        # Set default values for created_at and updated_at
-        created_at_obj = datetime.strptime(search_params.get('created_at', '0001-01-01T00:00:00'), '%Y-%m-%dT%H:%M:%S')
-        updated_at_obj = datetime.strptime(search_params.get('updated_at', '0001-01-01T00:00:00'), '%Y-%m-%dT%H:%M:%S')
 
         with self.engine.connect() as conn:
-            stmt = select(feature_views).where(feature_views.c.feature_view_name == search_params.get('name', '*'))
+            stmt = select(feature_views).where(
+                feature_views.c.feature_view_name == name
+            )
             rows = conn.execute(stmt).all()
             if rows:
-                fv_list = [
+                fv_list: List[FeatureView] = [
                     FeatureView.from_proto(
                         FeatureViewProto.FromString(row["feature_view_proto"])
                     )
                     for row in rows
                 ]
 
-                fv_list = [view for view in fv_list if view.created_timestamp >= created_at_obj]
-                fv_list = [view for view in fv_list if view.last_updated_timestamp >= updated_at_obj]
+                fv_list = [
+                    view
+                    for view in fv_list
+                    if getattr(view, "created_timestamp", datetime(1, 1, 1))
+                    >= created_at
+                ]
+                fv_list = [
+                    view
+                    for view in fv_list
+                    if getattr(view, "last_updated_timestamp", datetime(1, 1, 1))
+                    >= updated_at
+                ]
 
-                if 'application' in search_params:
-                    fv_list = [view for view in fv_list if view.tags.get('application') == search_params.get('application')]
-                if 'owning_team' in search_params:
-                    fv_list = [view for view in fv_list if view.tags.get('team') == search_params.get('owning_team')]
-                if 'online' in search_params:
-                    fv_list = [view for view in fv_list if view.online == search_params.get('online')]
+                fv_list = [
+                    view for view in fv_list if view.tags.get("team") == owning_team
+                ]
+                fv_list = [
+                    view
+                    for view in fv_list
+                    if view.tags.get("application") == application
+                ]
+                fv_list = [view for view in fv_list if view.online == online]
 
             else:
                 fv_list = []
 
-        project_list = self.get_all_project_metadata(self)
+        project_list: List[ProjectMetadataModel] = self.get_all_project_metadata()
 
-        if 'name' in search_params:
-            project_list = [project for project in project_list if project.project_name == search_params.get('name')]
-        project_list = [project for project in project_list if project.last_updated_timestamp >= updated_at_obj]
+        project_list = [
+            project for project in project_list if project.project_name == name
+        ]
+        project_list = [
+            project
+            for project in project_list
+            if project.last_updated_timestamp >= updated_at
+        ]
 
         return project_list.extend(fv_list)
 
