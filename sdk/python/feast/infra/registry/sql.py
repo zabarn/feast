@@ -1066,26 +1066,26 @@ class SqlRegistry(BaseRegistry):
 
     def search(
         self,
+        online,
         name="",
         application="",
         owning_team="",
         created_at=datetime(1, 1, 1),
         updated_at=datetime(1, 1, 1),
-        online=True,
     ) -> List[Union[FeatureView, ProjectMetadata]]:
         """
         Search for feature views or projects based on the provided search
         parameters. Since the SQL database stores only metadata and protos, we
         have to pull all potentially matching objects and filter in memory.
         """
-
+        fv_list = []
         with self.engine.connect() as conn:
             stmt = select(feature_views).where(
-                feature_views.c.feature_view_name == name
+                feature_views.c.feature_view_name == name if name else "*"
             )
             rows = conn.execute(stmt).all()
             if rows:
-                fv_list: List[FeatureView] = [
+                fv_list = [
                     FeatureView.from_proto(
                         FeatureViewProto.FromString(row["feature_view_proto"])
                     )
@@ -1095,30 +1095,29 @@ class SqlRegistry(BaseRegistry):
                 fv_list = [
                     view
                     for view in fv_list
-                    if getattr(view, "created_timestamp", datetime(1, 1, 1))
-                    >= created_at
+                    if getattr(view, "created_timestamp", datetime.max) >= created_at
                 ]
                 fv_list = [
                     view
                     for view in fv_list
-                    if getattr(view, "last_updated_timestamp", datetime(1, 1, 1))
+                    if getattr(view, "last_updated_timestamp", datetime.max)
                     >= updated_at
                 ]
 
-                fv_list = [
-                    view for view in fv_list if view.tags.get("team") == owning_team
-                ]
-                fv_list = [
-                    view
-                    for view in fv_list
-                    if view.tags.get("application") == application
-                ]
-                fv_list = [view for view in fv_list if view.online == online]
+                if owning_team:
+                    fv_list = [
+                        view for view in fv_list if view.tags.get("team") == owning_team
+                    ]
+                if application:
+                    fv_list = [
+                        view
+                        for view in fv_list
+                        if view.tags.get("application") == application
+                    ]
+                if online:
+                    fv_list = [view for view in fv_list if view.online == online]
 
-            else:
-                fv_list = []
-
-        project_list: List[ProjectMetadataModel] = self.get_all_project_metadata()
+        project_list = self.get_all_project_metadata()
 
         project_list = [
             project for project in project_list if project.project_name == name
@@ -1126,10 +1125,13 @@ class SqlRegistry(BaseRegistry):
         project_list = [
             project
             for project in project_list
-            if project.last_updated_timestamp >= updated_at
+            if getattr(project, "last_updated_timestamp", datetime.max) >= updated_at
         ]
 
-        return project_list.extend(fv_list)
+        final_list: List[FeatureView | ProjectMetadataModel] = []
+        final_list.extend(project_list)
+        final_list.extend(fv_list)
+        return final_list
 
     def _delete_object(
         self,
