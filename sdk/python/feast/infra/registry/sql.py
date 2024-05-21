@@ -1072,7 +1072,7 @@ class SqlRegistry(BaseRegistry):
         owning_team="",
         created_at=datetime(1, 1, 1),
         updated_at=datetime(1, 1, 1),
-    ) -> List[Union[FeatureView, ProjectMetadata]]:
+    ) -> List[Union[FeatureView, ProjectMetadataModel]]:
         """
         Search for feature views or projects based on the provided search
         parameters. Since the SQL database stores only metadata and protos, we
