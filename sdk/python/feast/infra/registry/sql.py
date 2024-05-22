@@ -1080,9 +1080,13 @@ class SqlRegistry(BaseRegistry):
         """
         fv_list = []
         with self.engine.connect() as conn:
-            stmt = select(feature_views).where(
-                name in feature_views.c.feature_view_name
-            )
+            if name:
+                stmt = select(feature_views).where(
+                    feature_views.c.feature_view_name == name
+                )
+            else:
+                stmt = select(feature_views)
+
             rows = conn.execute(stmt).all()
             print('Before if rows')
             print(rows)
