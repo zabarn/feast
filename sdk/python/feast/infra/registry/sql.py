@@ -1081,9 +1081,11 @@ class SqlRegistry(BaseRegistry):
         fv_list = []
         with self.engine.connect() as conn:
             stmt = select(feature_views).where(
-                feature_views.c.feature_view_name == name if name else "*"
+                name in feature_views.c.feature_view_name
             )
             rows = conn.execute(stmt).all()
+            print('Before if rows')
+            print(rows)
             if rows:
                 fv_list = [
                     FeatureView.from_proto(
@@ -1091,6 +1093,8 @@ class SqlRegistry(BaseRegistry):
                     )
                     for row in rows
                 ]
+                print('after converting from proto')
+                print(fv_list)
 
                 fv_list = [
                     view
@@ -1098,25 +1102,35 @@ class SqlRegistry(BaseRegistry):
                     if view.created_timestamp is not None
                     and view.created_timestamp >= created_at
                 ]
+                print('1')
+                print(fv_list)
                 fv_list = [
                     view
                     for view in fv_list
                     if view.last_updated_timestamp is not None
                     and view.last_updated_timestamp >= updated_at
                 ]
+                print('2')
+                print(fv_list)
 
                 if owning_team:
                     fv_list = [
                         view for view in fv_list if view.tags.get("team") == owning_team
                     ]
+                print('3')
+                print(fv_list)
                 if application:
                     fv_list = [
                         view
                         for view in fv_list
                         if view.tags.get("application") == application
                     ]
+                print('4')
+                print(fv_list)
                 if online:
                     fv_list = [view for view in fv_list if view.online == online]
+                print('5')
+                print(fv_list)
 
         project_list = self.get_all_project_metadata()
 
