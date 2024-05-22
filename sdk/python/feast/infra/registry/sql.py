@@ -1103,16 +1103,16 @@ class SqlRegistry(BaseRegistry):
                 fv_list = [
                     view
                     for view in fv_list
-                    if view.created_timestamp is not None
-                    and view.created_timestamp >= created_at
+                    if view.created_timestamp is None
+                    or view.created_timestamp >= created_at
                 ]
                 print('1')
                 print(fv_list)
                 fv_list = [
                     view
                     for view in fv_list
-                    if view.last_updated_timestamp is not None
-                    and view.last_updated_timestamp >= updated_at
+                    if view.last_updated_timestamp is None
+                    or view.last_updated_timestamp >= updated_at
                 ]
                 print('2')
                 print(fv_list)
@@ -1144,8 +1144,8 @@ class SqlRegistry(BaseRegistry):
         project_list = [
             project
             for project in project_list
-            if project.last_updated_timestamp is not None
-            and project.last_updated_timestamp >= updated_at
+            if project.last_updated_timestamp is None
+            or project.last_updated_timestamp >= updated_at
         ]
 
         final_list: List[FeatureView | ProjectMetadataModel] = []
