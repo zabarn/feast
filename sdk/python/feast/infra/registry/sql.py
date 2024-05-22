@@ -1070,8 +1070,8 @@ class SqlRegistry(BaseRegistry):
         name="",
         application="",
         owning_team="",
-        created_at=datetime(1, 1, 1),
-        updated_at=datetime(1, 1, 1),
+        created_at=datetime.min,
+        updated_at=datetime.min,
     ) -> List[Union[FeatureView, ProjectMetadataModel]]:
         """
         Search for feature views or projects based on the provided search
@@ -1095,13 +1095,14 @@ class SqlRegistry(BaseRegistry):
                 fv_list = [
                     view
                     for view in fv_list
-                    if getattr(view, "created_timestamp", datetime.max) >= created_at
+                    if view.created_timestamp is not None
+                    and view.created_timestamp >= created_at
                 ]
                 fv_list = [
                     view
                     for view in fv_list
-                    if getattr(view, "last_updated_timestamp", datetime.max)
-                    >= updated_at
+                    if view.last_updated_timestamp is not None
+                    and view.last_updated_timestamp >= updated_at
                 ]
 
                 if owning_team:
@@ -1125,7 +1126,8 @@ class SqlRegistry(BaseRegistry):
         project_list = [
             project
             for project in project_list
-            if getattr(project, "last_updated_timestamp", datetime.max) >= updated_at
+            if project.last_updated_timestamp is not None
+            and project.last_updated_timestamp >= updated_at
         ]
 
         final_list: List[FeatureView | ProjectMetadataModel] = []
