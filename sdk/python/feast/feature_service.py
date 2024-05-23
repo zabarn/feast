@@ -79,8 +79,8 @@ class FeatureService:
         self.description = description
         self.tags = tags or {}
         self.owner = owner
-        self.created_timestamp = None
-        self.last_updated_timestamp = None
+        self.created_timestamp = datetime.utcnow()
+        self.last_updated_timestamp = datetime.utcnow()
         self.logging_config = logging_config
         for feature_grouping in self._features:
             if isinstance(feature_grouping, BaseFeatureView):

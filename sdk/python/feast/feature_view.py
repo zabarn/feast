@@ -218,6 +218,8 @@ class FeatureView(BaseFeatureView):
         )
         self.online = online
         self.materialization_intervals = []
+        self.created_timestamp = datetime.utcnow()
+        self.last_updated_timestamp = datetime.utcnow()
 
     def __hash__(self):
         return super().__hash__()
