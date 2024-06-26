@@ -55,6 +55,8 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
+	github.com/gonuts/commander v0.1.0 // indirect
+	github.com/gonuts/flag v0.1.0 // indirect
 	github.com/google/flatbuffers v2.0.8+incompatible // indirect
 	github.com/klauspost/asmfmt v1.3.2 // indirect
 	github.com/klauspost/compress v1.16.3 // indirect
