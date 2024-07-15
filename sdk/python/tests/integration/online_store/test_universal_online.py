@@ -16,7 +16,9 @@ from botocore.exceptions import BotoCoreError
 
 from feast import FeatureStore
 from feast.entity import Entity
-from feast.errors import FeatureNameCollisionError
+from feast.errors import (
+    FeatureNameCollisionError,
+)
 from feast.feature_service import FeatureService
 from feast.feature_view import FeatureView
 from feast.field import Field

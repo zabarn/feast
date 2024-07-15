@@ -147,10 +147,9 @@ celerybeat-schedule
 
 # Environments
 .env
-.venv
 .venv*
 env/
-venv/
+venv*/
 ENV/
 env.bak/
 venv.bak/
@@ -230,3 +229,5 @@ sdk/python/feast/binaries/
 
 venv39/*
 test.go
+go/go
+github.com/feast-dev/feast

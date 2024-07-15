@@ -36,11 +36,8 @@ build: protos build-java build-docker
 
 # Python SDK
 
-install-python-ci-dependencies: install-go-proto-dependencies install-go-ci-dependencies
+install-python-ci-dependencies:
 	python -m piptools sync sdk/python/requirements/py$(PYTHON)-ci-requirements.txt
-	pip install --no-deps -e .
-	python setup.py build_python_protos --inplace
-	COMPILE_GO=true python setup.py develop
 
 install-python-ci-dependencies-uv:
 	uv pip sync --system sdk/python/requirements/py$(PYTHON)-ci-requirements.txt
@@ -346,9 +343,6 @@ test-python-universal-cassandra-no-cloud-providers:
 test-python-universal:
 	python -m pytest -n 8 --integration sdk/python/tests
 
-test-python-go-server: compile-go-lib
- 	FEAST_USAGE=False IS_TEST=True pytest --integration --goserver sdk/python/tests
-
 format-python:
 	cd ${ROOT_DIR}/sdk/python; python -m ruff check --fix feast/ tests/
 	cd ${ROOT_DIR}/sdk/python; python -m ruff format feast/ tests/
@@ -416,22 +410,17 @@ install-protoc-dependencies:
 compile-protos-go: install-go-proto-dependencies install-protoc-dependencies
 	python setup.py build_go_protos
 
-compile-go-lib: install-go-proto-dependencies install-go-ci-dependencies
-	CGO_LDFLAGS_ALLOW=".*" COMPILE_GO=True python setup.py build_ext --inplace
-
 install-feast-ci-locally:
 	pip install -e ".[ci]"
 
-# Needs feast package to setup the feature store
-# CGO flag is due to this issue: https://github.com/golang/go/wiki/InvalidFlag
-test-go: compile-protos-go compile-protos-python  compile-go-lib install-feast-ci-locally
-	CGO_LDFLAGS_ALLOW=".*" go test -tags cgo,ccalloc ./...
+test-go: compile-protos-go compile-protos-python install-feast-ci-locally
+	CGO_ENABLED=1 go test -coverprofile=coverage.out ./... && go tool cover -html=coverage.out -o coverage.html
 
 format-go:
 	gofmt -s -w go/
 
-lint-go: compile-protos-go compile-go-lib
-	go vet -tags cgo,ccalloc ./go/internal/feast ./go/embedded
+lint-go: compile-protos-go
+	go vet ./go/internal/feast
 
 # Docker
 
@@ -464,6 +453,14 @@ build-feature-server-java-docker:
 		-t $(REGISTRY)/feature-server-java:$(VERSION) \
 		-f java/infra/docker/feature-server/Dockerfile --load .
 
+push-feature-server-go-docker:
+	docker push $(REGISTRY)/feature-server-go:$(VERSION)
+
+build-feature-server-go-docker:
+	docker buildx build --build-arg VERSION=$(VERSION) \
+		-t $(REGISTRY)/feature-server-go:$(VERSION) \
+		-f go/infra/docker/feature-server/Dockerfile --load .
+
 push-feast-operator-docker:
 	cd infra/feast-operator && \
 	IMAGE_TAG_BASE=$(REGISTRY)/feast-operator \
@@ -491,6 +488,11 @@ build-java-docker-dev:
 	docker buildx build --build-arg VERSION=dev \
 		-t feastdev/feature-server-java:dev \
 		-f java/infra/docker/feature-server/Dockerfile.dev --load .
+
+build-go-docker-dev:
+	docker buildx build --build-arg VERSION=dev \
+		-t feastdev/feature-server-go:dev \
+		-f go/infra/docker/feature-server/Dockerfile --load .
 
 # Documentation
 

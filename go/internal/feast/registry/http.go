@@ -2,13 +2,15 @@ package registry
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
-	"github.com/feast-dev/feast/go/protos/feast/core"
-	"github.com/rs/zerolog/log"
-	"google.golang.org/protobuf/proto"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/feast-dev/feast/go/protos/feast/core"
+	"github.com/rs/zerolog/log"
+	"google.golang.org/protobuf/proto"
 )
 
 type HttpRegistryStore struct {
@@ -29,8 +31,21 @@ func (e *NotImplementedError) Error() string {
 }
 
 func NewHttpRegistryStore(config *RegistryConfig, project string) (*HttpRegistryStore, error) {
+	caCertPool, err := x509.SystemCertPool()
+	if err != nil {
+		return nil, err
+	}
+	if caCertPool == nil {
+		caCertPool = x509.NewCertPool()
+	}
+
+	// Create a TLS configuration with the custom CA certificate pool
+	tlsConfig := &tls.Config{
+		RootCAs: caCertPool,
+	}
+
 	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		TLSClientConfig: tlsConfig,
 		IdleConnTimeout: 60 * time.Second,
 	}
 
@@ -59,7 +74,7 @@ func (hrs *HttpRegistryStore) TestConnectivity() error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("HTTP Registry connecitiy check failed with status code: %d", resp.StatusCode)
+		return fmt.Errorf("HTTP Registry connectivity check failed with status code: %d", resp.StatusCode)
 	}
 
 	return nil
@@ -157,9 +172,6 @@ func (r *HttpRegistryStore) loadOnDemandFeatureViews(registry *core.Registry) er
 		if err := proto.Unmarshal(data, od_feature_view_list); err != nil {
 			return err
 		}
-		if len(od_feature_view_list.GetOndemandfeatureviews()) == 0 {
-			log.Warn().Msg(fmt.Sprintf("Feature Registry has no associated Ondemandfeatureviews for project %s.", r.project))
-		}
 		registry.OnDemandFeatureViews = append(registry.OnDemandFeatureViews, od_feature_view_list.GetOndemandfeatureviews()...)
 		return nil
 	})
@@ -171,9 +183,6 @@ func (r *HttpRegistryStore) loadFeatureServices(registry *core.Registry) error {
 		feature_service_list := &core.FeatureServiceList{}
 		if err := proto.Unmarshal(data, feature_service_list); err != nil {
 			return err
-		}
-		if len(feature_service_list.GetFeatureservices()) == 0 {
-			log.Warn().Msg(fmt.Sprintf("Feature Registry has no associated FeatureServices for project %s.", r.project))
 		}
 		registry.FeatureServices = append(registry.FeatureServices, feature_service_list.GetFeatureservices()...)
 		return nil
