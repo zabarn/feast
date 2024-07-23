@@ -607,7 +607,7 @@ class HttpRegistry(BaseRegistry):
         project: str,
         allow_cache: bool = False,
     ) -> List[SavedDataset]:
-        raise NotImplementedError("Method not implemented")
+        pass
 
     def apply_validation_reference(
         self,
@@ -657,7 +657,7 @@ class HttpRegistry(BaseRegistry):
         project: str,
         allow_cache: bool = False,
     ) -> List[ValidationReference]:
-        raise NotImplementedError("Method not implemented")
+        pass
 
     def proto(self) -> RegistryProto:
         r = RegistryProto()
