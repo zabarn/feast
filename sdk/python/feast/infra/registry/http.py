@@ -193,8 +193,7 @@ class HttpRegistry(BaseRegistry):
             )
         try:
             url = f"{self.base_url}/projects/{project}/entities/{name}"
-            params = {"allow_cache": True}
-            response_data = self._send_request("GET", url, params=params)
+            response_data = self._send_request("GET", url)
             return EntityModel.model_validate(response_data).to_entity()
         except EntityNotFoundException as exception:
             logger.error(
@@ -217,8 +216,7 @@ class HttpRegistry(BaseRegistry):
             )
         try:
             url = f"{self.base_url}/projects/{project}/entities"
-            params = {"allow_cache": True}
-            response_data = self._send_request("GET", url, params=params)
+            response_data = self._send_request("GET", url)
             response_list = response_data if isinstance(response_data, list) else []
             return [
                 EntityModel.model_validate(entity).to_entity()
@@ -285,8 +283,7 @@ class HttpRegistry(BaseRegistry):
             )
         try:
             url = f"{self.base_url}/projects/{project}/data_sources/{name}"
-            params = {"allow_cache": True}
-            response_data = self._send_request("GET", url, params=params)
+            response_data = self._send_request("GET", url)
             if "model_type" in response_data:
                 if response_data["model_type"] == "RequestSourceModel":
                     return RequestSourceModel.model_validate(
@@ -324,8 +321,7 @@ class HttpRegistry(BaseRegistry):
             )
         try:
             url = f"{self.base_url}/projects/{project}/data_sources"
-            params = {"allow_cache": True}
-            response_data = self._send_request("GET", url, params=params)
+            response_data = self._send_request("GET", url)
             response_list = response_data if isinstance(response_data, list) else []
             data_source_list: List[DataSource] = []
             for data_source in response_list:
@@ -404,8 +400,7 @@ class HttpRegistry(BaseRegistry):
             )
         try:
             url = f"{self.base_url}/projects/{project}/feature_services/{name}"
-            params = {"allow_cache": True}
-            response_data = self._send_request("GET", url, params=params)
+            response_data = self._send_request("GET", url)
             return FeatureServiceModel.model_validate(
                 response_data
             ).to_feature_service()
@@ -430,8 +425,7 @@ class HttpRegistry(BaseRegistry):
             )
         try:
             url = f"{self.base_url}/projects/{project}/feature_services"
-            params = {"allow_cache": True}
-            response_data = self._send_request("GET", url, params=params)
+            response_data = self._send_request("GET", url)
             response_list = response_data if isinstance(response_data, list) else []
             return [
                 FeatureServiceModel.model_validate(feature_service).to_feature_service()
@@ -496,8 +490,7 @@ class HttpRegistry(BaseRegistry):
             )
         try:
             url = f"{self.base_url}/projects/{project}/feature_views/{name}"
-            params = {"allow_cache": True}
-            response_data = self._send_request("GET", url, params=params)
+            response_data = self._send_request("GET", url)
             return FeatureViewModel.model_validate(response_data).to_feature_view()
         except FeatureViewNotFoundException as exception:
             logger.error(
@@ -520,8 +513,7 @@ class HttpRegistry(BaseRegistry):
             )
         try:
             url = f"{self.base_url}/projects/{project}/feature_views"
-            params = {"allow_cache": True}
-            response_data = self._send_request("GET", url, params=params)
+            response_data = self._send_request("GET", url)
             response_list = response_data if isinstance(response_data, list) else []
             return [
                 FeatureViewModel.model_validate(feature_view).to_feature_view()
@@ -540,8 +532,7 @@ class HttpRegistry(BaseRegistry):
             )
         try:
             url = f"{self.base_url}/projects/{project}/on_demand_feature_views/{name}"
-            params = {"allow_cache": True}
-            response_data = self._send_request("GET", url, params=params)
+            response_data = self._send_request("GET", url)
             return OnDemandFeatureViewModel.model_validate(
                 response_data
             ).to_feature_view()
@@ -566,8 +557,7 @@ class HttpRegistry(BaseRegistry):
             )
         try:
             url = f"{self.base_url}/projects/{project}/on_demand_feature_views"
-            params = {"allow_cache": True}
-            response_data = self._send_request("GET", url, params=params)
+            response_data = self._send_request("GET", url)
             response_list = response_data if isinstance(response_data, list) else []
             return [
                 OnDemandFeatureViewModel.model_validate(feature_view).to_feature_view()
@@ -816,8 +806,7 @@ class HttpRegistry(BaseRegistry):
             )
         try:
             url = f"{self.base_url}/projects/{project}"
-            params = {"allow_cache": True}
-            response_data = self._send_request("GET", url, params=params)
+            response_data = self._send_request("GET", url)
             return [
                 ProjectMetadataModel.model_validate(response_data).to_project_metadata()
             ]
