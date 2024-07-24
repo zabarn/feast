@@ -369,6 +369,7 @@ def test_idempotent_featureview_conversion():
             Field(name="feature2", dtype=Float32),
         ],
         source=spark_source,
+        ttl=timedelta(days=10),
     )
     python_obj.materialization_intervals = [
         (datetime.now() - timedelta(days=10), datetime.now() - timedelta(days=9)),

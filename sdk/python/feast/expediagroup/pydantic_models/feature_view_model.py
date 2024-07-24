@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple, Union
 
 import dill
-from pydantic import BaseModel
+from pydantic import BaseModel, field_serializer, field_validator
 from typing_extensions import Self
 
 from feast.expediagroup.pydantic_models.data_source_model import (
@@ -77,6 +77,27 @@ class FeatureViewModel(BaseFeatureViewModel):
     created_timestamp: Optional[datetime]
     last_updated_timestamp: Optional[datetime]
 
+    # To make it compatible with Pydantic V1, we need this field_serializer
+    @field_serializer("ttl")
+    def serialize_dt(self, ttl: timedelta, _info):
+        return str(timedelta.total_seconds(ttl))
+
+    # To make it compatible with Pydantic V1, we need this field_validator
+    @field_validator("ttl", mode="before")
+    @classmethod
+    def validate_ttl(cls, v: Union[int, float, str, timedelta]):
+        try:
+            if isinstance(v, timedelta):
+                return v
+            elif isinstance(v, float):
+                return timedelta(seconds=v)
+            elif isinstance(v, str):
+                return timedelta(seconds=float(v))
+            elif isinstance(v, int):
+                return timedelta(seconds=v)
+        except ValueError:
+            raise ValueError("ttl must be one of the int, float, str, timedelta types")
+
     def to_feature_view(self) -> FeatureView:
         """
         Given a Pydantic FeatureViewModel, create and return a FeatureView.
@@ -109,6 +130,7 @@ class FeatureViewModel(BaseFeatureViewModel):
             ),
             entities=[entity.to_entity() for entity in self.original_entities],
             ttl=self.ttl,
+            # ttl=Duration().FromTimedelta(self.ttl),
             online=self.online,
             description=self.description,
             tags=self.tags if self.tags else None,
