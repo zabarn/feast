@@ -79,8 +79,8 @@ class FeatureViewModel(BaseFeatureViewModel):
 
     # To make it compatible with Pydantic V1, we need this field_serializer
     @field_serializer("ttl")
-    def serialize_dt(self, ttl: timedelta, _info):
-        return timedelta.total_seconds(ttl)
+    def serialize_ttl(self, ttl: timedelta):
+        return timedelta.total_seconds(ttl) if ttl else None
 
     # To make it compatible with Pydantic V1, we need this field_validator
     @field_validator("ttl", mode="before")
