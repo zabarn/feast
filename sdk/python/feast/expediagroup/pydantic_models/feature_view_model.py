@@ -322,11 +322,13 @@ class OnDemandFeatureViewModel(BaseFeatureViewModel):
     source_request_sources: Dict[str, RequestSourceModel]
     udf: str = ""
     udf_string: str = ""
-    feature_transformation: Union[
-        PandasTransformationModel,
-        PythonTransformationModel,
-        SubstraitTransformationModel,
-    ]
+    feature_transformation: Optional[
+        Union[
+            PandasTransformationModel,
+            PythonTransformationModel,
+            SubstraitTransformationModel,
+        ]
+    ] = None
     mode: str = "pandas"
     description: str = ""
     tags: Optional[dict[str, str]] = None
@@ -350,17 +352,22 @@ class OnDemandFeatureViewModel(BaseFeatureViewModel):
                     feature_view_projection.to_feature_view_projection()  # type: ignore
                 )
 
-        if self.mode == "pandas":
-            feature_transformation = (
-                self.feature_transformation.to_pandas_transformation()  # type: ignore
-            )
-        elif self.mode == "python":
-            feature_transformation = (
-                self.feature_transformation.to_python_transformation()  # type: ignore
-            )
-        elif self.mode == "substrait":
-            feature_transformation = (
-                self.feature_transformation.to_substrait_transformation()  # type: ignore
+        if self.feature_transformation is not None:
+            if self.mode == "pandas":
+                feature_transformation = (
+                    self.feature_transformation.to_pandas_transformation()  # type: ignore
+                )
+            elif self.mode == "python":
+                feature_transformation = (
+                    self.feature_transformation.to_python_transformation()  # type: ignore
+                )
+            elif self.mode == "substrait":
+                feature_transformation = (
+                    self.feature_transformation.to_substrait_transformation()  # type: ignore
+                )
+        else:
+            feature_transformation = PandasTransformation(
+                udf=dill.loads(bytes.fromhex(self.udf)), udf_string=self.udf_string
             )
 
         odfv = OnDemandFeatureView(

@@ -9,9 +9,8 @@ import sys
 from datetime import timedelta
 from typing import Dict, List, Literal, Optional, Union
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_serializer, field_validator
 from pydantic import Field as PydanticField
-from pydantic import field_serializer, field_validator
 from typing_extensions import Annotated, Self
 
 from feast.data_source import KafkaSource, PushSource, RequestSource
