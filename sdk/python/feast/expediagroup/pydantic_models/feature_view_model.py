@@ -130,7 +130,6 @@ class FeatureViewModel(BaseFeatureViewModel):
             ),
             entities=[entity.to_entity() for entity in self.original_entities],
             ttl=self.ttl,
-            # ttl=Duration().FromTimedelta(self.ttl),
             online=self.online,
             description=self.description,
             tags=self.tags if self.tags else None,
