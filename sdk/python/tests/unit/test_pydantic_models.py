@@ -447,6 +447,7 @@ def test_idempotent_featureview_with_streaming_source_conversion():
             Field(name="feature2", dtype=Float32),
         ],
         source=spark_source,
+        ttl=timedelta(days=0),
     )
     python_obj.materialization_intervals = [
         (datetime.now() - timedelta(days=10), datetime.now() - timedelta(days=9)),
@@ -526,6 +527,7 @@ def test_idempotent_featureview_with_confluent_streaming_source_conversion():
             Field(name="feature2", dtype=Float32),
         ],
         source=spark_source,
+        ttl=timedelta(days=0),
     )
     python_obj.materialization_intervals = [
         (datetime.now() - timedelta(days=10), datetime.now() - timedelta(days=9)),
@@ -780,6 +782,7 @@ def test_idempotent_feature_service_conversion():
             Field(name="feature2", dtype=Float32),
         ],
         source=spark_source,
+        ttl=timedelta(days=0),
     )
 
     spark_source_2 = SparkSource(
@@ -797,6 +800,7 @@ def test_idempotent_feature_service_conversion():
             Field(name="feature2", dtype=Float32),
         ],
         source=spark_source_2,
+        ttl=timedelta(days=10),
     )
 
     python_obj = FeatureService(
