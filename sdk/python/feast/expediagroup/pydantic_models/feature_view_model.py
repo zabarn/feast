@@ -85,7 +85,7 @@ class FeatureViewModel(BaseFeatureViewModel):
     # To make it compatible with Pydantic V1, we need this field_validator
     @field_validator("ttl", mode="before")
     @classmethod
-    def validate_ttl(cls, v: Union[int, float, str, timedelta]):
+    def validate_ttl(cls, v: Optional[Union[int, float, str, timedelta]]):
         try:
             if isinstance(v, timedelta):
                 return v
@@ -95,6 +95,8 @@ class FeatureViewModel(BaseFeatureViewModel):
                 return timedelta(seconds=float(v))
             elif isinstance(v, int):
                 return timedelta(seconds=v)
+            else:
+                return timedelta(seconds=0)  # Default value
         except ValueError:
             raise ValueError("ttl must be one of the int, float, str, timedelta types")
 

@@ -276,7 +276,7 @@ class KafkaSourceModel(DataSourceModel):
     # To make it compatible with Pydantic V1, we need this field_validator
     @field_validator("watermark_delay_threshold", mode="before")
     @classmethod
-    def validate_ttl(cls, v: Union[int, float, str, timedelta]):
+    def validate_ttl(cls, v: Optional[Union[int, float, str, timedelta]]):
         try:
             if isinstance(v, timedelta):
                 return v
@@ -286,6 +286,8 @@ class KafkaSourceModel(DataSourceModel):
                 return timedelta(seconds=float(v))
             elif isinstance(v, int):
                 return timedelta(seconds=v)
+            else:
+                return timedelta(seconds=0)
         except ValueError:
             raise ValueError("ttl must be one of the int, float, str, timedelta types")
 
