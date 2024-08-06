@@ -2,6 +2,7 @@ package feast
 
 import (
 	"context"
+	"github.com/feast-dev/feast/go/internal/feast/model"
 	"github.com/feast-dev/feast/go/protos/feast/core"
 	"path/filepath"
 	"runtime"
@@ -86,7 +87,6 @@ func getRepoConfig() (config registry.RepoConfig) {
 func TestGetRequestSources(t *testing.T) {
 	config := getRepoConfig()
 	fs, _ := NewFeatureStore(&config, nil)
-	fVList := []string{"odfv1", "fv1"}
 
 	odfv := &core.OnDemandFeatureView{
 		Spec: &core.OnDemandFeatureViewSpec{
@@ -118,6 +118,8 @@ func TestGetRequestSources(t *testing.T) {
 		},
 	}
 
+	fVList := make([]*model.OnDemandFeatureView, 0)
+	fVList = append(fVList, odfv)
 	cachedOnDemandFVs := make(map[string]map[string]*core.OnDemandFeatureView)
 	cachedOnDemandFVs["feature_repo"] = make(map[string]*core.OnDemandFeatureView)
 	cachedOnDemandFVs["feature_repo"]["odfv1"] = odfv

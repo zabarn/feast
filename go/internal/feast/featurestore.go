@@ -19,6 +19,15 @@ import (
 	prototypes "github.com/feast-dev/feast/go/protos/feast/types"
 )
 
+type FeatureStoreInterface interface {
+	GetOnlineFeatures(
+		ctx context.Context,
+		featureRefs []string,
+		featureService *model.FeatureService,
+		joinKeyToEntityValues map[string]*prototypes.RepeatedValue,
+		requestData map[string]*prototypes.RepeatedValue,
+		fullFeatureNames bool) ([]*onlineserving.FeatureVector, error)
+}
 type FeatureStore struct {
 	config                 *registry.RepoConfig
 	registry               *registry.Registry
