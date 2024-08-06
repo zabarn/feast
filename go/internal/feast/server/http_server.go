@@ -253,7 +253,7 @@ func (s *httpServer) getOnlineFeatures(w http.ResponseWriter, r *http.Request) {
 		requestSources, _ = s.fs.GetRequestSources(odfVList)
 	}
 	if len(request.Entities) > 0 {
-		var entityType prototypes.Value_Enum
+		var entityType prototypes.ValueType_Enum
 		for key, value := range request.Entities {
 			entity, err := s.fs.GetEntity(key, false)
 			if err != nil {

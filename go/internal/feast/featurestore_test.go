@@ -118,8 +118,27 @@ func TestGetRequestSources(t *testing.T) {
 		},
 	}
 
+	cached_odfv := &model.OnDemandFeatureView{
+		Base: model.NewBaseFeatureView("odfv1", []*core.FeatureSpecV2{
+			{
+				Name:      "feat1",
+				ValueType: types.ValueType_INT64,
+			},
+		}),
+		SourceFeatureViewProjections: make(map[string]*model.FeatureViewProjection),
+		SourceRequestDataSources: map[string]*core.DataSource_RequestDataOptions{
+			"request_source_1": {
+				Schema: []*core.FeatureSpecV2{
+					{
+						Name:      "feat1",
+						ValueType: types.ValueType_INT64,
+					},
+				},
+			},
+		},
+	}
 	fVList := make([]*model.OnDemandFeatureView, 0)
-	fVList = append(fVList, odfv)
+	fVList = append(fVList, cached_odfv)
 	cachedOnDemandFVs := make(map[string]map[string]*core.OnDemandFeatureView)
 	cachedOnDemandFVs["feature_repo"] = make(map[string]*core.OnDemandFeatureView)
 	cachedOnDemandFVs["feature_repo"]["odfv1"] = odfv
