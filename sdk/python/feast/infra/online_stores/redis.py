@@ -325,6 +325,7 @@ class RedisOnlineStore(OnlineStore):
                 for feature_name, val in values.items():
                     f_key = _mmh3(f"{feature_view}:{feature_name}")
                     entity_hset[f_key] = val.SerializeToString()
+                    print(f_key, val.SerializeToString())
 
                 pipe.hset(redis_key_bin, mapping=entity_hset)
 

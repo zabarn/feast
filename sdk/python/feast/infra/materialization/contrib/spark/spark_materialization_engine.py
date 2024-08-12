@@ -244,6 +244,8 @@ def _map_by_partition(
 
         table = pyarrow.Table.from_pandas(pdf)
 
+        print("table: ", table)
+
         # unserialize artifacts
         (
             feature_view,
@@ -264,6 +266,7 @@ def _map_by_partition(
         rows_to_write = _convert_arrow_to_proto(
             table, feature_view, join_key_to_value_type
         )
+        print("rows_to_write:", rows_to_write)
         online_store.online_write_batch(
             repo_config,
             feature_view,
